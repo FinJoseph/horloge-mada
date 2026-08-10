@@ -17,6 +17,13 @@ class ClockPageTest extends TestCase
             ->assertSee('Chat du shift');
     }
 
+    public function test_health_check_up(): void
+    {
+        $this->get('/up')
+            ->assertOk()
+            ->assertJson(['status' => 'ok']);
+    }
+
     public function test_chat_send_stores_message_in_cache(): void
     {
         Cache::forget('chat:messages');
