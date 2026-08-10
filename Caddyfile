@@ -2,6 +2,7 @@
 	frankenphp
 	order php_server before file_server
 	auto_https off
+	admin off
 
 	# The `Mercure` extension is enabled by default for the Caddyfile.
 	# You do not need this section if you're not using Mercure.
