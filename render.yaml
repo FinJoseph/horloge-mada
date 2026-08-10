@@ -4,7 +4,9 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
+    port: 8080
     healthCheckPath: /up
+    healthCheckPort: 8080
     autoDeploy: true
     envVars:
       - key: APP_ENV
