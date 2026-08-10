@@ -11,7 +11,9 @@ storage/framework/views/*
 public/build
 public/hot
 .env
-.env.*
+.env.backup
+.env.production
+!.env.example
 tests
 docker-compose.yml
 fly.toml
