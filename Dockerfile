@@ -12,6 +12,10 @@ RUN npm run build
 FROM dunglas/frankenphp:1-php8.4
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# Render/K8s ne peuvent pas exec un binaire à file capabilities (no_new_privs).
+# On écoute sur 8080 (port non privilégié) => cap_net_bind_service inutile.
+RUN setcap -r /usr/local/bin/frankenphp
+
 RUN install-php-extensions \
     bcmath \
     ctype \
