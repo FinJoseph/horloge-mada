@@ -4,6 +4,10 @@ Horloge intelligente du call center — heure officielle de **Madagascar** (Indi
 
 Créé avec ❤️ par **Fin Joseph** — [Portfolio](https://finjoseph.onrender.com/) · [GitHub](https://github.com/FinJoseph)
 
+## 📸 Aperçu
+
+![Horloge Mada](public/images/screenshots/horloge-mada.png)
+
 ## ✨ Fonctionnalités
 
 - 🕒 Heure officielle de Madagascar en temps réel
