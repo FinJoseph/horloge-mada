@@ -24,6 +24,23 @@ class ClockPageTest extends TestCase
             ->assertJson(['status' => 'ok']);
     }
 
+    public function test_sitemap_xml_renders(): void
+    {
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertSee('<?xml version="1.0"', false)
+            ->assertSee('hreflang="x-default"', false)
+            ->assertSee(url('/'));
+    }
+
+    public function test_robots_txt_declares_sitemap(): void
+    {
+        $content = file_get_contents(public_path('robots.txt'));
+
+        $this->assertStringContainsString('Sitemap:', $content);
+        $this->assertStringContainsString('/sitemap.xml', $content);
+    }
+
     public function test_chat_send_stores_message_in_cache(): void
     {
         Cache::forget('chat:messages');

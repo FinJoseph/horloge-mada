@@ -5,12 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0b1026">
     <meta name="description" content="Horloge intelligente du call center — heure officielle de Madagascar">
+    <link rel="canonical" href="{{ url('/') }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Horloge Mada">
     <meta property="og:title" content="Horloge Mada">
     <meta property="og:description" content="Horloge intelligente du call center — heure officielle de Madagascar, progression de journée, pause, paie et chat.">
     <meta property="og:locale" content="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <meta property="og:url" content="{{ url('/') }}">
     <meta name="twitter:card" content="summary">
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org",
+        "@@type": "WebSite",
+        "name": "Horloge Mada",
+        "url": "{{ url('/') }}",
+        "description": "Horloge intelligente du call center — heure officielle de Madagascar",
+        "inLanguage": "fr",
+        "publisher": {
+            "@@type": "Person",
+            "name": "Fin Joseph",
+            "url": "https://github.com/FinJoseph"
+        }
+    }
+    </script>
     <title>Horloge Mada</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322d3ee' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 6v6l4 2'/%3E%3C/svg%3E">
     <style>
