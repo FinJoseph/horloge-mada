@@ -191,8 +191,7 @@ new class extends Component
                 </div>
 
                 <div
-                    class="author-card glass-3d rise-in flex flex-1 flex-col items-center justify-center rounded-2xl p-5 text-center"
-                    style="animation-delay: .22s"
+                    class="author-card glass-3d flex flex-1 flex-col items-center justify-center rounded-2xl p-5 text-center"
                     x-data="tilt3d(9)"
                     @mousemove="tilt($event)"
                     @mouseleave="reset()"
