@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      APP_ENV: local
+      APP_KEY: ${APP_KEY:-}
+      APP_URL: http://localhost:8080
+      CACHE_STORE: file
+      SESSION_DRIVER: file
+      QUEUE_CONNECTION: sync
+      SHIFT_TIMEZONE: Indian/Antananarivo
+      SHIFT_START: "07:00"
+      SHIFT_LUNCH: "12:00"
+      SHIFT_LUNCH_DURATION: 60
+      SHIFT_END: "19:00"
+    volumes:
+      - app-storage:/app/storage
+
+volumes:
+  app-storage:

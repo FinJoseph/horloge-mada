@@ -1,0 +1,33 @@
+{
+	frankenphp
+	order php_server before file_server
+	auto_https off
+
+	# The `Mercure` extension is enabled by default for the Caddyfile.
+	# You do not need this section if you're not using Mercure.
+	# mercure
+
+	# The `XSendfile` extension is enabled by default for the Caddyfile.
+	# xsendfile
+
+	log {
+		level WARN
+	}
+}
+
+# Run the app on port 8080 (used by Fly.io / Render)
+:8080 {
+	root * /app/public
+	encode zstd gzip
+
+	# Security headers
+	header {
+		-X-Frame-Options SAMEORIGIN
+		-X-Content-Type-Options nosniff
+	}
+
+	php_server {
+		trusted_proxies private_ranges
+	}
+	file_server
+}

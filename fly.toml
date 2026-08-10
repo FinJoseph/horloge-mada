@@ -1,0 +1,36 @@
+app = "horloge-mada"
+primary_region = "jnb"
+kill_signal = "SIGINT"
+kill_timeout = 5
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  APP_ENV = "production"
+  APP_DEBUG = "false"
+  APP_URL = "https://horloge-mada.fly.dev"
+  CACHE_STORE = "file"
+  SESSION_DRIVER = "file"
+  QUEUE_CONNECTION = "sync"
+  SHIFT_TIMEZONE = "Indian/Antananarivo"
+  SHIFT_START = "07:00"
+  SHIFT_LUNCH = "12:00"
+  SHIFT_LUNCH_DURATION = "60"
+  SHIFT_END = "19:00"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 200
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

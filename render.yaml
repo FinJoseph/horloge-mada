@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: horloge-mada
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        value: https://horloge-mada.onrender.com
+      - key: CACHE_STORE
+        value: file
+      - key: SESSION_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: SHIFT_TIMEZONE
+        value: Indian/Antananarivo
+      - key: SHIFT_START
+        value: "07:00"
+      - key: SHIFT_LUNCH
+        value: "12:00"
+      - key: SHIFT_LUNCH_DURATION
+        value: "60"
+      - key: SHIFT_END
+        value: "19:00"
