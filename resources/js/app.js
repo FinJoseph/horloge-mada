@@ -68,7 +68,15 @@ function shiftToMin(value) {
     return h * 60 + m;
 }
 
-const dayFormatter = new Intl.DateTimeFormat(INTL_LOCALE, {
+function createFormatter(locale, opts, fallback) {
+    try {
+        return new Intl.DateTimeFormat(locale, opts);
+    } catch {
+        return new Intl.DateTimeFormat(fallback, opts);
+    }
+}
+
+const dayFormatter = createFormatter(INTL_LOCALE, {
     timeZone: MADA_TZ,
     hour: '2-digit',
     minute: '2-digit',
@@ -77,21 +85,24 @@ const dayFormatter = new Intl.DateTimeFormat(INTL_LOCALE, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    hourCycle: 'h23',
     hour12: false,
-});
+}, 'fr-FR');
 
-const numFormatter = new Intl.DateTimeFormat('en-CA', {
+const numFormatter = createFormatter('en-CA', {
     timeZone: MADA_TZ,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-});
+}, 'en-CA');
 
 function madaParts(now) {
     const raw = Object.fromEntries(dayFormatter.formatToParts(now).map((x) => [x.type, x.value]));
     const n = Object.fromEntries(numFormatter.formatToParts(now).map((x) => [x.type, parseInt(x.value, 10)]));
+    let hour = parseInt(raw.hour, 10);
+    if (hour === 24) hour = 0;
     return {
-        h: parseInt(raw.hour, 10),
+        h: hour,
         m: parseInt(raw.minute, 10),
         s: parseInt(raw.second, 10),
         ms: now.getMilliseconds(),
@@ -252,6 +263,7 @@ window.madaClock = () => {
             const target = targets[this.phaseKey()];
             if (target === undefined) return (i18n.clock_countdown_done) || 'C’est fini !';
             let seconds = (target - min) * 60 - this.p.s;
+            if (seconds < 0) seconds = 0;
             const hh = Math.floor(seconds / 3600);
             const mm = Math.floor((seconds % 3600) / 60);
             const ss = seconds % 60;
