@@ -22,8 +22,9 @@
 	}
 }
 
-# Run the app on port 8080 (used by Fly.io / Render)
-:8080 {
+# Render injecte $PORT (défaut 10000) et y envoie le healthcheck.
+# Liaison dynamique => pas de re-détection de port ni de timeout.
+:{$PORT:8080} {
 	root * /app/public
 	encode zstd gzip
 
