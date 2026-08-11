@@ -204,7 +204,7 @@ new class extends Component
                     <div class="author-avatar mx-auto">
                         <x-icon name="code" class="h-7 w-7 text-white" />
                     </div>
-                    <p class="mt-3 flex items-center justify-center gap-1 text-sm text-white/70">{{ __('footer_created_by') }} <x-icon name="heart" class="h-4 w-4 text-rose-400" /> par</p>
+                    <p class="mt-3 flex items-center justify-center gap-1 text-sm text-white/70">{{ __('footer_created_by') }} <x-icon name="heart" class="h-4 w-4 text-rose-400" /> {{ __('footer_by') }}</p>
                     <p class="mt-1 text-lg font-bold">Fin Joseph</p>
                     <div class="mt-3 flex justify-center gap-2">
                         <a
@@ -231,6 +231,7 @@ new class extends Component
         <footer class="mt-6 pb-2 text-center text-xs text-white/40">
             <x-icon name="clock" class="mb-0.5 inline-block h-3.5 w-3.5" /> {{ __('clock_footer') }} · {{ __('footer_created_by') }}
             <x-icon name="heart" class="mb-0.5 inline-block h-3 w-3 text-rose-400" />
+            {{ __('footer_by') }}
             <a href="https://github.com/FinJoseph" target="_blank" rel="noopener noreferrer" class="underline decoration-white/30 underline-offset-2 hover:text-white/70">Fin Joseph</a>
         </footer>
     </div>

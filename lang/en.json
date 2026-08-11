@@ -24,8 +24,9 @@
     "toast_done": "It's OVER! Have a great evening",
     "toast_break": "Stand up for 2 minutes: drink some water, stretch!",
     "payday_today": "It's payday!",
-    "payday_in": "Payday in :daysd",
+    "payday_in": "Payday in :days day(s)",
     "footer_created_by": "Made with",
+    "footer_by": "by",
     "sit_before": [
         "Alarm is ringing, coffee is waiting ⏰",
         "A little more night, the day will be great 🌅",
