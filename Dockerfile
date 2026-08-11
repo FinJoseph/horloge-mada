@@ -33,6 +33,12 @@ RUN install-php-extensions \
     xml \
     zip
 
+# Composer utilise unzip (sinon il décompresse avec l'extension PHP zip
+# et perd les permissions UNIX des binaires de vendor/).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends unzip \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 ENV COMPOSER_ALLOW_SUPERUSER=1 \
