@@ -1,6 +1,6 @@
 # 🕰️ Horloge Mada
 
-Horloge intelligente du call center — heure officielle de **Madagascar** (Indian/Antananarivo), progression de journée, pause déjeuner, compte à rebours, paie, chat en direct et mascotte chat qui se promène sur toute la page.
+Horloge intelligente du call center — heure officielle de **Madagascar** (Indian/Antananarivo), progression de journée ultra-précise, pause déjeuner, compte à rebours, paie, chat en direct, **mini-jeux** et mascotte chat qui se promène sur toute la page.
 
 Créé avec ❤️ par **Fin Joseph** — [Portfolio](https://finjoseph.onrender.com/) · [GitHub](https://github.com/FinJoseph)
 
@@ -20,16 +20,18 @@ Créé avec ❤️ par **Fin Joseph** — [Portfolio](https://finjoseph.onrender
 
 ## ✨ Fonctionnalités
 
-- 🕒 Heure officielle de Madagascar en temps réel
+- 🕒 Heure officielle de Madagascar en temps réel (API `GET /api/time` synchronisée, indépendante du PC)
 - 📅 Date et jour de la semaine en 5 langues : 🇫🇷 🇲🇬 🇬🇧 🇮🇳 🇨🇳
 - 🎨 12 thèmes visuels (Classic, Foot, Fleur, Amour, Tech, Cool, Reggae, Geek, Animaux, Océan, Noël, Nuit), chacun avec sa mascotte
-- ⏱️ Progression de la journée de travail (07:00 → 19:00)
+- ⏱️ Progression de la journée de travail (07:00 → 19:00) **au millième de % près** (mise à jour en continu)
 - 🍽️ Pause déjeuner à 12:00 (1h)
 - ⏳ Compte à rebours vers la prochaine étape
 - 💰 Compte à rebours de la paie (15 du mois)
 - 🌅 Ciel dynamique : aube, jour, crépuscule, nuit — soleil et lune réalistes en 3D
 - 🐱 Chat mascotte qui se promène aléatoirement sur toute la page
-- 💬 Chat en direct multi-utilisateurs : emojis, stickers et GIFs animés (Google Noto, sans clé API), **sondages**, réactions, réponses, édition, suppression, recherche, annonces, présence en ligne et indicateur de frappe
+- 💬 Chat en direct multi-utilisateurs : emojis, **stickers (Tenor + Klipy + emojis)**, GIFs animés, **sondages (12 options, pourcentages précis)**, réactions, réponses, édition, suppression, recherche, annonces, présence en ligne et indicateur de frappe
+- 🎮 **Mini-jeux** (`/jeux`) : ⌨️ **Dactylo Arcade** (3 modes : Course, Survie, Défi WPM — 5 niveaux, 4 styles d'arène, règles et records), 🔤 Anagrammes, 🧺 Panière à lettres, ✊ Pierre-papier-ciseaux, ⭕ Morpion (IA), 🧠 Mémoire, 🐍 Serpent
+- ⚙️ Menu Paramètres unifié : langue, fuseau horaire, thème et son regroupés dans un seul bouton
 - 📡 API émojis : `GET /api/emojis` — 3953 émojis (recherche, catégories, teints de peau, pagination, hex pour les images Noto)
 - 🔔 Alarmes sonores (début, pause, reprise, fin de journée)
 - 🎨 Effets 3D : tilt au survol des cartes, reflets, écran de chargement
@@ -98,6 +100,10 @@ Le dépôt contient un **Blueprint `render.yaml`** à la racine : Render détect
 | `SHIFT_LUNCH` | `12:00` |
 | `SHIFT_LUNCH_DURATION` | `60` |
 | `SHIFT_END` | `19:00` |
+| `TENOR_API_KEY` | clé gratuite [Tenor](https://tenor.com/developer/keyregistration) (stickers du chat) |
+| `KLIPY_API_KEY` | clé gratuite [Klipy](https://partner.klipy.com) (GIFs du chat) |
+
+> 💡 Stickers du chat : les emojis/klipy fonctionnent sans clé ; Tenor est un bonus si une clé est fournie.
 
 ## 📄 Licence
 

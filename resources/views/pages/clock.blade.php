@@ -63,82 +63,118 @@ new class extends Component
                 </div>
                     <div>
                         <h1 class="text-lg font-bold tracking-tight">Horloge Mada</h1>
-                        <p class="max-w-[180px] truncate text-xs text-white/60 sm:max-w-none" x-text="city + ' · ' + weekday() + ' ' + date()"></p>
+                        <p class="max-w-[180px] truncate text-xs text-white/60 sm:max-w-none" x-text="cityName() + ' · ' + weekday() + ' ' + date()"></p>
                     </div>
             </div>
 
             <div class="flex items-center gap-3">
-                <div x-data="languagePicker()" class="relative">
-                    <button
-                        type="button"
-                        @click="open = !open"
-                        class="glass flex h-11 items-center gap-2 rounded-2xl px-3 text-sm transition hover:scale-105 active:scale-95"
-                        :title="'🌐 ' + current"
-                    >
-                        <x-icon name="globe" class="h-5 w-5" />
-                        <span class="hidden font-bold uppercase tracking-wider sm:inline" x-text="current"></span>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                    <div
-                        x-show="open"
-                        @click.away="open = false"
-                        x-transition
-                        class="dropdown-panel absolute right-0 z-40 mt-2 w-52 overflow-hidden rounded-2xl p-1.5"
-                    >
-                        <template x-for="lang in languages" :key="lang.code">
-                            <button
-                                type="button"
-                                @click="setLocale(lang.code)"
-                                class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition hover:bg-white/10"
-                                :class="lang.code === current ? 'bg-white/10 font-bold' : ''"
-                            >
-                                <span class="text-base" x-text="lang.flag"></span>
-                                <span x-text="lang.name"></span>
-                                <span class="ml-auto text-xs text-white/40 uppercase" x-text="lang.code"></span>
-                            </button>
-                        </template>
-                    </div>
+                <div class="glass hidden rounded-2xl px-4 py-2 text-sm text-white/80 lg:block">
+                    <span class="font-semibold text-white" x-text="phaseLabel()"></span>
                 </div>
-                <div x-data="themePicker()" class="relative">
+                <span class="relative inline-flex h-2.5 w-2.5 shrink-0" :title="syncOk() ? i18n.clock_sync_ok : i18n.clock_sync_off">
+                    <span x-show="syncOk()" class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
+                    <span class="relative inline-flex h-2.5 w-2.5 rounded-full" :class="syncOk() ? 'bg-emerald-400' : 'bg-amber-400'"></span>
+                </span>
+                <a
+                    href="{{ url('/jeux') }}"
+                    class="glass flex h-11 w-11 items-center justify-center rounded-2xl text-lg transition hover:scale-105 active:scale-95"
+                    :title="i18n.games_title"
+                >🎮</a>
+                <div x-data="settingsMenu()" class="relative">
                     <button
                         type="button"
                         @click="open = !open"
                         class="glass flex h-11 w-11 items-center justify-center rounded-2xl transition hover:scale-105 active:scale-95"
-                        :title="'🎨 ' + (themes.find(t => t.id === current)?.name || current)"
+                        :title="i18n.settings_title || 'Paramètres'"
                     >
-                        <x-icon name="palette" class="h-5 w-5" />
+                        <x-icon name="settings" class="h-5 w-5" />
                     </button>
                     <div
                         x-show="open"
                         @click.away="open = false"
                         x-transition
-                        class="dropdown-panel absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl p-1.5"
+                        class="dropdown-panel absolute right-0 z-40 mt-2 w-64 overflow-hidden rounded-2xl p-2"
                     >
-                        <template x-for="t in themes" :key="t.id">
-                            <button
-                                type="button"
-                                @click="setTheme(t.id)"
-                                class="flex w-full items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm transition hover:bg-white/10"
-                                :class="t.id === current ? 'bg-white/10 font-bold' : ''"
-                            >
-                                <span class="text-base" x-text="t.emoji"></span>
-                                <span x-text="t.name"></span>
-                                <span class="ml-auto text-xs text-white/40" x-show="t.id === current">✓</span>
-                            </button>
+                        <div class="mb-2 grid grid-cols-4 gap-1">
+                            <template x-for="t in tabs" :key="t.id">
+                                <button
+                                    type="button"
+                                    @click="tab = t.id"
+                                    class="flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[11px] font-bold transition"
+                                    :class="tab === t.id ? 'bg-white/10 text-white' : 'text-white/40 hover:bg-white/5 hover:text-white/70'"
+                                >
+                                    <span class="text-base" x-text="t.emoji"></span>
+                                    <span x-text="t.label"></span>
+                                </button>
+                            </template>
+                        </div>
+                        <template x-if="tab === 'lang'">
+                            <div class="max-h-64 space-y-0.5 overflow-y-auto">
+                                <template x-for="lang in languages" :key="lang.code">
+                                    <button
+                                        type="button"
+                                        @click="setLocale(lang.code)"
+                                        class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition hover:bg-white/10"
+                                        :class="lang.code === langCurrent ? 'bg-white/10 font-bold' : ''"
+                                    >
+                                        <span class="text-base" x-text="lang.flag"></span>
+                                        <span x-text="lang.name"></span>
+                                        <span class="ml-auto text-xs uppercase text-white/40" x-text="lang.code"></span>
+                                        <span class="text-xs text-cyan-300" x-show="lang.code === langCurrent">✓</span>
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="tab === 'tz'">
+                            <div class="max-h-64 space-y-0.5 overflow-y-auto">
+                                <template x-for="z in zones" :key="z.id">
+                                    <button
+                                        type="button"
+                                        @click="setTz(z.id)"
+                                        class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition hover:bg-white/10"
+                                        :class="z.id === tzCurrent ? 'bg-white/10 font-bold' : ''"
+                                    >
+                                        <span class="text-base" x-text="z.flag"></span>
+                                        <span x-text="z.name"></span>
+                                        <span class="ml-auto text-xs tabular-nums text-white/40" x-text="offsetFor(z.id)"></span>
+                                        <span class="text-xs text-cyan-300" x-show="z.id === tzCurrent">✓</span>
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="tab === 'theme'">
+                            <div class="max-h-64 space-y-0.5 overflow-y-auto">
+                                <template x-for="t in themes" :key="t.id">
+                                    <button
+                                        type="button"
+                                        @click="setTheme(t.id)"
+                                        class="flex w-full items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm transition hover:bg-white/10"
+                                        :class="t.id === themeCurrent ? 'bg-white/10 font-bold' : ''"
+                                    >
+                                        <span class="text-base" x-text="t.emoji"></span>
+                                        <span x-text="t.name"></span>
+                                        <span class="ml-auto text-xs text-cyan-300" x-show="t.id === themeCurrent">✓</span>
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="tab === 'sound'">
+                            <div class="space-y-0.5">
+                                <button
+                                    type="button"
+                                    @click="toggleSound()"
+                                    class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition hover:bg-white/10"
+                                    :class="soundOn ? 'bg-white/10' : ''"
+                                >
+                                    <span class="text-xl" x-text="soundOn ? '🔔' : '🔕'"></span>
+                                    <span x-text="soundOn ? @js(__('settings_sound_on')) : @js(__('settings_sound_off'))"></span>
+                                    <span class="ml-auto h-5 w-9 rounded-full p-0.5 transition" :class="soundOn ? 'bg-emerald-500/60' : 'bg-white/15'">
+                                        <span class="block h-4 w-4 rounded-full bg-white transition" :class="soundOn ? 'translate-x-4' : ''"></span>
+                                    </span>
+                                </button>
+                            </div>
                         </template>
                     </div>
-                </div>
-                <button
-                    type="button"
-                    @click="toggleSound()"
-                    class="glass h-11 w-11 rounded-2xl text-lg transition hover:scale-105 active:scale-95"
-                    :title="soundOn ? i18n.clock_sound_on : i18n.clock_sound_off"
-                >
-                    <span x-show="soundOn"><x-icon name="bell" class="mx-auto h-5 w-5" /></span>
-                    <span x-show="!soundOn" class="opacity-50"><x-icon name="bell-off" class="mx-auto h-5 w-5" /></span>
-                </button>
-                <div class="glass hidden rounded-2xl px-4 py-2 text-sm text-white/80 sm:block">
-                    <span class="font-semibold text-white" x-text="phaseLabel()"></span>
                 </div>
             </div>
         </header>
@@ -171,12 +207,13 @@ new class extends Component
                         <div class="w-full">
                             <div class="mb-2 flex items-end justify-between text-sm">
                                 <span class="font-medium text-white/70">{{ __('clock_work_day') }}</span>
-                                <span class="font-bold tabular-nums" x-text="progressPct() + '%'"></span>
+                                <span class="font-bold tabular-nums" x-text="progressPctPrecise().toFixed(3) + '%'"></span>
                             </div>
                             <div class="progress-track relative h-4 overflow-hidden rounded-full">
-                                <div class="progress-bar relative h-full overflow-hidden rounded-full transition-all duration-1000" :style="'width: ' + progressPct() + '%'"></div>
+                                <div class="progress-bar relative h-full overflow-hidden rounded-full transition-all duration-1000" :style="'width: ' + progressPctPrecise().toFixed(2) + '%'"></div>
                                 <div class="marker absolute top-0 h-full w-1 rounded-full bg-white/80" :style="'left: ' + lunchMarker() + '%'"></div>
                             </div>
+                            <div class="mt-1 text-center text-[10px] tabular-nums text-white/35" x-text="progressPctPrecise().toFixed(6) + ' %'"></div>
                             <div class="mt-2 flex justify-between text-xs text-white/50">
                                 <span x-text="cfg.start"></span>
                                 <span class="flex items-center gap-1"><x-icon name="utensils" class="h-3.5 w-3.5" /> <span x-text="cfg.lunch"></span></span>

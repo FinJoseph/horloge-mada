@@ -1,4 +1,5 @@
 import { EMOJI_CATEGORIES, STICKERS, GIFS } from './emoji.js';
+import './games.js';
 import intersect from '@alpinejs/intersect';
 import persist from '@alpinejs/persist';
 import 'emoji-picker-element';
@@ -45,8 +46,6 @@ const savedTheme = (() => {
 
 document.documentElement.setAttribute('data-app-theme', savedTheme);
 
-const MADA_TZ = 'Indian/Antananarivo';
-
 const INTL_LOCALES = { fr: 'fr-FR', mg: 'mg-MG', en: 'en-GB', hi: 'hi-IN', zh: 'zh-CN' };
 
 function loadI18n() {
@@ -72,7 +71,47 @@ function loadShift() {
 const i18n = loadI18n();
 const SHIFT = loadShift();
 const INTL_LOCALE = INTL_LOCALES[i18n.locale] || 'fr-FR';
-const CITY = i18n.clock_city || 'Fianarantsoa';
+
+const DEFAULT_TZ = SHIFT.timezone || 'Indian/Antananarivo';
+
+const TIMEZONES = [
+    { id: 'Indian/Antananarivo', name: 'Madagascar', flag: '🇲🇬' },
+    { id: 'Europe/Paris', name: 'Paris', flag: '🇫🇷' },
+    { id: 'Europe/London', name: 'Londres', flag: '🇬🇧' },
+    { id: 'Africa/Nairobi', name: 'Nairobi', flag: '🇰🇪' },
+    { id: 'America/New_York', name: 'New York', flag: '🇺🇸' },
+    { id: 'America/Los_Angeles', name: 'Los Angeles', flag: '🇺🇸' },
+    { id: 'America/Sao_Paulo', name: 'São Paulo', flag: '🇧🇷' },
+    { id: 'Asia/Tokyo', name: 'Tokyo', flag: '🇯🇵' },
+    { id: 'Asia/Shanghai', name: 'Shanghai', flag: '🇨🇳' },
+    { id: 'Asia/Kolkata', name: 'Mumbai', flag: '🇮🇳' },
+    { id: 'Australia/Sydney', name: 'Sydney', flag: '🇦🇺' },
+    { id: 'Etc/UTC', name: 'UTC', flag: '🌐' },
+];
+
+const TZ_CITY = Object.fromEntries(TIMEZONES.map((t) => [t.id, t.name]));
+
+let currentTz = (() => {
+    try {
+        const saved = localStorage.getItem('mada-tz');
+        return saved || DEFAULT_TZ;
+    } catch {
+        return DEFAULT_TZ;
+    }
+})();
+
+let clockOffset = 0;
+let clockSyncOk = true;
+
+function tzOffset(tz) {
+    try {
+        const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date());
+        const name = (parts.find((p) => p.type === 'timeZoneName') || {}).value || '';
+        return name.replace('GMT', 'UTC');
+    } catch {
+        return '';
+    }
+}
 
 const MESSAGES = {
     before: [
@@ -121,8 +160,7 @@ function createFormatter(locale, opts, fallback) {
     }
 }
 
-const dayFormatter = createFormatter(INTL_LOCALE, {
-    timeZone: MADA_TZ,
+const DAY_OPTS = {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
@@ -132,20 +170,32 @@ const dayFormatter = createFormatter(INTL_LOCALE, {
     year: 'numeric',
     hourCycle: 'h23',
     hour12: false,
-}, 'fr-FR');
+};
 
-const numFormatter = createFormatter('en-CA', {
-    timeZone: MADA_TZ,
+const NUM_OPTS = {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-}, 'en-CA');
+};
 
-function madaParts(now) {
-    const raw = Object.fromEntries(dayFormatter.formatToParts(now).map((x) => [x.type, x.value]));
-    const n = Object.fromEntries(numFormatter.formatToParts(now).map((x) => [x.type, parseInt(x.value, 10)]));
+const fmtCache = new Map();
+
+function partsFor(now, tz) {
+    let f = fmtCache.get(tz);
+
+    if (!f) {
+        f = {
+            day: createFormatter(INTL_LOCALE, { ...DAY_OPTS, timeZone: tz }, 'fr-FR'),
+            num: createFormatter('en-CA', { ...NUM_OPTS, timeZone: tz }, 'en-CA'),
+        };
+        fmtCache.set(tz, f);
+    }
+
+    const raw = Object.fromEntries(f.day.formatToParts(now).map((x) => [x.type, x.value]));
+    const n = Object.fromEntries(f.num.formatToParts(now).map((x) => [x.type, parseInt(x.value, 10)]));
     let hour = parseInt(raw.hour, 10);
     if (hour === 24) hour = 0;
+
     return {
         h: hour,
         m: parseInt(raw.minute, 10),
@@ -157,6 +207,10 @@ function madaParts(now) {
         mo: n.month,
         d: n.day,
     };
+}
+
+function madaParts(now) {
+    return partsFor(now, currentTz);
 }
 
 function phaseKeyFor(min, cfg) {
@@ -212,10 +266,10 @@ window.madaClock = () => {
     return {
         cfg: SHIFT,
         i18n,
-        city: CITY,
         now: new Date(),
         p: {},
         timer: null,
+        syncTimer: null,
         soundOn: localStorage.getItem('mada-sound') !== 'off',
         appThemeId: savedTheme,
         audio: null,
@@ -227,14 +281,46 @@ window.madaClock = () => {
         init() {
             this.tick();
             this.timer = setInterval(() => this.tick(), 100);
+            this.sync();
+            this.syncTimer = setInterval(() => this.sync(), 5 * 60 * 1000);
             document.addEventListener('pointerdown', () => this.unlockAudio(), { once: true });
             window.addEventListener('app-theme', (e) => {
                 this.appThemeId = e.detail;
+            });
+            window.addEventListener('app-sound', (e) => {
+                this.soundOn = e.detail;
+                if (this.soundOn) {
+                    this.unlockAudio();
+                    this.beep(660, 0.1);
+                }
             });
         },
 
         destroy() {
             clearInterval(this.timer);
+            clearInterval(this.syncTimer);
+        },
+
+        async sync() {
+            try {
+                const res = await fetch('/api/time');
+                if (!res.ok) {
+                    throw new Error('time');
+                }
+                const data = await res.json();
+                clockOffset = Math.round((data.unix * 1000) - Date.now());
+                clockSyncOk = true;
+            } catch {
+                clockSyncOk = false;
+            }
+        },
+
+        now() {
+            return new Date(Date.now() + clockOffset);
+        },
+
+        syncOk() {
+            return clockSyncOk;
         },
 
         unlockAudio() {
@@ -269,13 +355,17 @@ window.madaClock = () => {
         },
 
         tick() {
-            this.now = new Date();
+            this.now = this.now();
             this.p = this.parts();
             this.checkAlarms();
         },
 
         parts() {
             return madaParts(this.now);
+        },
+
+        cityName() {
+            return TZ_CITY[currentTz] || currentTz;
         },
 
         nowMin() {
@@ -337,6 +427,21 @@ window.madaClock = () => {
             const work = end - start - (lunchEnd - lunch);
             const untilLunch = lunch - start;
             return ((untilLunch / work) * 100).toFixed(1);
+        },
+
+        progressPctPrecise() {
+            const secs = this.nowMin() * 60 + this.p.s + this.p.ms / 1000;
+            const s = start * 60;
+            const e = end * 60;
+            const l = lunch * 60;
+            const le = lunchEnd * 60;
+            const work = e - s - (le - l);
+            let done = 0;
+            if (secs > s) done += Math.min(secs, l) - s;
+            if (secs > le) done += Math.min(secs, e) - le;
+            done = Math.max(0, Math.min(done, work));
+            const pct = (done / work) * 100;
+            return Math.min(100, Math.max(0, pct));
         },
 
         time() {
@@ -426,9 +531,16 @@ window.madaClock = () => {
     };
 };
 
-window.languagePicker = () => ({
+window.settingsMenu = () => ({
     open: false,
-    current: i18n.locale || 'fr',
+    tab: 'lang',
+    tabs: [
+        { id: 'lang', emoji: '🌐', label: (i18n.settings_language) || 'Langue' },
+        { id: 'tz', emoji: '🕒', label: (i18n.settings_timezone) || 'Fuseau horaire' },
+        { id: 'theme', emoji: '🎨', label: (i18n.settings_theme) || 'Thème' },
+        { id: 'sound', emoji: '🔊', label: (i18n.settings_sound) || 'Son' },
+    ],
+    langCurrent: i18n.locale || 'fr',
     languages: [
         { code: 'fr', flag: '🇫🇷', name: 'Français' },
         { code: 'mg', flag: '🇲🇬', name: 'Malagasy' },
@@ -436,18 +548,31 @@ window.languagePicker = () => ({
         { code: 'hi', flag: '🇮🇳', name: 'हिन्दी' },
         { code: 'zh', flag: '🇨🇳', name: '中文' },
     ],
+    zones: TIMEZONES,
+    tzCurrent: currentTz,
+    themes: THEMES,
+    themeCurrent: savedTheme,
+    soundOn: localStorage.getItem('mada-sound') !== 'off',
+
+    offsetFor(tz) {
+        return tzOffset(tz);
+    },
     setLocale(code) {
         document.cookie = `locale=${code}; path=/; max-age=31536000; samesite=lax`;
         window.location.reload();
     },
-});
-
-window.themePicker = () => ({
-    open: false,
-    themes: THEMES,
-    current: savedTheme,
+    setTz(id) {
+        this.tzCurrent = id;
+        currentTz = id;
+        try {
+            localStorage.setItem('mada-tz', id);
+        } catch {
+            /* noop */
+        }
+        this.open = false;
+    },
     setTheme(id) {
-        this.current = id;
+        this.themeCurrent = id;
         try {
             localStorage.setItem('mada-theme', id);
         } catch {
@@ -455,6 +580,15 @@ window.themePicker = () => ({
         }
         document.documentElement.setAttribute('data-app-theme', id);
         window.dispatchEvent(new CustomEvent('app-theme', { detail: id }));
+    },
+    toggleSound() {
+        this.soundOn = !this.soundOn;
+        try {
+            localStorage.setItem('mada-sound', this.soundOn ? 'on' : 'off');
+        } catch {
+            /* noop */
+        }
+        window.dispatchEvent(new CustomEvent('app-sound', { detail: this.soundOn }));
     },
 });
 
@@ -499,7 +633,7 @@ window.madaCat = () => {
         },
 
         tick() {
-            this.now = new Date();
+            this.now = new Date(Date.now() + clockOffset);
             this.p = madaParts(this.now);
         },
 
@@ -539,11 +673,11 @@ window.madaCat = () => {
 
 const chatMeta = (() => {
     const el = document.getElementById('chat-config');
-    if (!el) return { klipy: false, delete_confirm: 'Supprimer ce message ?', sender_id: '' };
+    if (!el) return { klipy: false, tenor: false, delete_confirm: 'Supprimer ce message ?', sender_id: '' };
     try {
         return JSON.parse(el.textContent);
     } catch {
-        return { klipy: false, delete_confirm: 'Supprimer ce message ?', sender_id: '' };
+        return { klipy: false, tenor: false, delete_confirm: 'Supprimer ce message ?', sender_id: '' };
     }
 })();
 
@@ -553,6 +687,9 @@ window.chatComposer = () => ({
     picker: false,
     pickerStyle: {},
     pollComposer: false,
+    pollQuestion: '',
+    pollOption: '',
+    pollOptions: [],
     announceComposer: false,
     activeTab: window.Alpine.$persist('emoji'),
     soundOn: window.Alpine.$persist(true),
@@ -580,16 +717,32 @@ window.chatComposer = () => ({
     searchEmpty: false,
 
     klipyOn: !!chatMeta.klipy,
+    tenorOn: !!chatMeta.tenor,
     klipyGifs: [],
     klipyStickers: [],
+    tenorStickers: [],
     gifQuery: '',
     stickerQuery: '',
+    stickerSource: (() => {
+        try {
+            const saved = localStorage.getItem('mada-sticker-source');
+            if (saved) return saved;
+        } catch {
+            /* noop */
+        }
+        if (chatMeta.tenor) return 'tenor';
+        if (chatMeta.klipy) return 'klipy';
+        return 'emoji';
+    })(),
     gifLoaded: false,
     stickerLoaded: false,
     gifLoading: false,
     stickerLoading: false,
     gifFailed: false,
     stickerFailed: false,
+    tenorLoaded: false,
+    tenorLoading: false,
+    tenorFailed: false,
 
     emojiUrl: (hex) => `https://fonts.gstatic.com/s/e/notoemoji/latest/${hex}/512.gif`,
 
@@ -699,6 +852,32 @@ window.chatComposer = () => ({
 
     closePicker() {
         this.picker = false;
+    },
+
+    addPollOption() {
+        const label = this.pollOption.trim().slice(0, 60);
+        if (!label || this.pollOptions.length >= 12) return;
+        this.pollOptions.push(label);
+        this.pollOption = '';
+        this.$nextTick(() => {
+            const ta = this.$refs.msgInput;
+            if (ta) ta.focus();
+        });
+    },
+
+    removePollOption(i) {
+        this.pollOptions.splice(i, 1);
+    },
+
+    publishPoll() {
+        const question = this.pollQuestion.trim().slice(0, 160);
+        if (!question || this.pollOptions.length < 2) return;
+        const options = [...this.pollOptions];
+        this.pollQuestion = '';
+        this.pollOptions = [];
+        this.pollOption = '';
+        this.pollComposer = false;
+        this.$wire.createPoll(question, options);
     },
 
     async submitChat() {
@@ -993,6 +1172,52 @@ window.chatComposer = () => ({
             /* noop */
         }
         this[kind + 'Loading'] = false;
+    },
+
+    setStickerSource(src) {
+        if (!this[src === 'klipy' ? 'klipyOn' : src === 'tenor' ? 'tenorOn' : true]) return;
+        this.stickerSource = src;
+        try {
+            localStorage.setItem('mada-sticker-source', src);
+        } catch {
+            /* noop */
+        }
+        if (src === 'tenor' && !this.tenorLoaded && !this.tenorLoading) {
+            this.loadTenor();
+        }
+    },
+
+    async loadTenor() {
+        if (!this.tenorOn || this.tenorLoaded) return;
+        this.tenorLoading = true;
+        this.tenorFailed = false;
+        try {
+            const res = await fetch('/api/stickers');
+            const data = await res.json();
+            if (Array.isArray(data.results)) {
+                this.tenorStickers = data.results;
+                this.tenorLoaded = true;
+            }
+        } catch {
+            this.tenorFailed = true;
+        }
+        this.tenorLoading = false;
+    },
+
+    async searchTenor() {
+        const q = this.stickerQuery.trim();
+        if (!q) return;
+        this.tenorLoading = true;
+        this.tenorFailed = false;
+        try {
+            const res = await fetch('/api/stickers?q=' + encodeURIComponent(q));
+            const data = await res.json();
+            this.tenorStickers = Array.isArray(data.results) ? data.results : [];
+            this.tenorLoaded = true;
+        } catch {
+            this.tenorFailed = true;
+        }
+        this.tenorLoading = false;
     },
 
     sendMedia(item, type) {

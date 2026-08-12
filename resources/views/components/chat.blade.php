@@ -24,11 +24,7 @@ new class extends Component
 
     public string $pollQuestion = '';
 
-    public string $pollOptionInput = '';
-
     public array $pollOptions = [];
-
-    public bool $pollComposer = false;
 
     public string $announceText = '';
 
@@ -232,28 +228,12 @@ new class extends Component
         return $this->klipyFetch('search', trim(mb_substr($query, 0, 60)), $kind);
     }
 
-    public function addPollOption(): void
+    public function createPoll(?string $question = null, ?array $options = null): void
     {
-        $label = trim(mb_substr($this->pollOptionInput, 0, 60));
-        if ($label === '' || count($this->pollOptions) >= 4) {
-            return;
-        }
-        $this->pollOptions[] = $label;
-        $this->pollOptionInput = '';
-    }
+        $question = trim(mb_substr($question ?? $this->pollQuestion, 0, 160));
+        $options = array_values($options ?? $this->pollOptions);
 
-    public function removePollOption(int $index): void
-    {
-        if (isset($this->pollOptions[$index])) {
-            unset($this->pollOptions[$index]);
-            $this->pollOptions = array_values($this->pollOptions);
-        }
-    }
-
-    public function createPoll(): void
-    {
-        $question = trim(mb_substr($this->pollQuestion, 0, 160));
-        if ($question === '' || count($this->pollOptions) < 2) {
+        if ($question === '' || count($options) < 2) {
             return;
         }
 
@@ -267,8 +247,8 @@ new class extends Component
                 'question' => $question,
                 'closed' => false,
                 'options' => array_map(
-                    fn ($label) => ['id' => uniqid('', true), 'label' => $label, 'votes' => []],
-                    array_values($this->pollOptions),
+                    fn ($label) => ['id' => uniqid('', true), 'label' => mb_substr(trim((string) $label), 0, 60), 'votes' => []],
+                    $options,
                 ),
             ],
             'time' => now()->timezone(config('shift.timezone'))->format('H:i'),
@@ -280,7 +260,6 @@ new class extends Component
         Cache::put('chat:messages', $this->messages, $this->ttl());
         $this->pollQuestion = '';
         $this->pollOptions = [];
-        $this->pollComposer = false;
         $this->clearTyping();
         $this->syncPresence();
     }
@@ -295,13 +274,8 @@ new class extends Component
             }
 
             foreach ($m['poll']['options'] as &$opt) {
-                $opt['votes'] = array_values(array_diff($opt['votes'] ?? [], [$this->senderId]));
-            }
-            unset($opt);
-
-            foreach ($m['poll']['options'] as &$opt) {
                 if (($opt['id'] ?? null) === $optionId) {
-                    $opt['votes'][] = $this->senderId;
+                    $opt['votes'] = array_values(array_unique([...($opt['votes'] ?? []), $this->senderId]));
                     break;
                 }
             }
@@ -556,6 +530,16 @@ new class extends Component
         });
     }
 
+    public function trendingStickers(): array
+    {
+        return \App\Support\Tenor::trending();
+    }
+
+    public function searchStickers(string $query): array
+    {
+        return \App\Support\Tenor::search($query);
+    }
+
     protected function renderText(string $text): string
     {
         $text = e($text);
@@ -581,7 +565,7 @@ new class extends Component
     x-init="watchScroll()"
     class="glass chat-card flex max-h-[85vh] h-[min(76vh,26rem)] sm:h-[30rem] flex-col overflow-hidden rounded-2xl"
 >
-    <div hidden id="chat-config">{{ json_encode(['klipy' => $this->klipyOn, 'delete_confirm' => __('chat_delete_confirm'), 'sender_id' => $this->senderId]) }}</div>
+    <div hidden id="chat-config">{{ json_encode(['klipy' => $this->klipyOn, 'tenor' => \App\Support\Tenor::configured(), 'delete_confirm' => __('chat_delete_confirm'), 'sender_id' => $this->senderId]) }}</div>
 
     <header class="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3 sm:px-5">
         <div class="flex min-w-0 items-center gap-3">
@@ -756,7 +740,8 @@ new class extends Component
                                         @foreach (($poll['options'] ?? []) as $opt)
                                             @php
                                                 $votes = count($opt['votes'] ?? []);
-                                                $pct = $total > 0 ? (int) round($votes / $total * 100) : 0;
+                                                $pct = $total > 0 ? ($votes / $total) * 100 : 0.0;
+                                                $pctLabel = $total > 0 ? rtrim(rtrim(number_format($pct, 3, ',', ''), '0'), ',') : '0';
                                                 $voted = in_array($this->senderId, $opt['votes'] ?? [], true);
                                             @endphp
                                             <button
@@ -766,8 +751,8 @@ new class extends Component
                                                 {{ $closed ? 'disabled' : '' }}
                                             >
                                                 <span class="poll-option-label">{{ $opt['label'] }}</span>
-                                                <span class="poll-bar"><span class="poll-bar-fill" style="width: {{ $pct }}%"></span></span>
-                                                <span class="poll-pct">{{ $pct }}%</span>
+                                                <span class="poll-bar"><span class="poll-bar-fill" style="width: {{ number_format($pct, 3, '.', '') }}%"></span></span>
+                                                <span class="poll-pct">{{ $pctLabel }}%</span>
                                             </button>
                                         @endforeach
                                         <div class="poll-meta">
@@ -979,37 +964,46 @@ new class extends Component
             </div>
             <input
                 type="text"
-                wire:model.live="pollQuestion"
+                x-model="pollQuestion"
                 placeholder="{{ __('chat_poll_question') }}"
                 maxlength="160"
                 class="chat-input mb-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-white/40 focus:border-cyan-400/60"
-                @keydown.enter.prevent="$wire.addPollOption()"
             >
-            @foreach ($pollOptions as $i => $opt)
+            <template x-for="(opt, i) in pollOptions" :key="i">
                 <div class="mb-2 flex items-center gap-1.5">
-                    <span class="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/90">{{ $opt }}</span>
-                    <button type="button" wire:click="removePollOption({{ $i }})" class="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-red-300">
+                    <span class="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/90" x-text="opt"></span>
+                    <button type="button" @click="removePollOption(i)" class="rounded-lg p-1.5 text-white/50 hover:bg-white/10 hover:text-red-300">
                         <x-icon name="trash" class="h-3.5 w-3.5" />
                     </button>
                 </div>
-            @endforeach
+            </template>
             <div class="flex items-center gap-2">
                 <input
                     type="text"
-                    wire:model.live="pollOptionInput"
+                    x-model="pollOption"
                     placeholder="{{ __('chat_poll_option') }}"
                     maxlength="60"
                     class="chat-input flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none placeholder:text-white/40 focus:border-cyan-400/60"
-                    @keydown.enter.prevent="$wire.addPollOption()"
+                    @keydown.enter.prevent="addPollOption()"
                 >
-                <button type="button" wire:click="addPollOption()" class="shrink-0 rounded-lg bg-white/10 px-3 py-2 text-sm text-white/80 hover:bg-white/15">
+                <button
+                    type="button"
+                    @click="addPollOption()"
+                    :disabled="pollOptions.length >= 12"
+                    class="shrink-0 rounded-lg bg-white/10 px-3 py-2 text-sm text-white/80 hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
+                >
                     {{ __('chat_poll_add') }}
                 </button>
             </div>
+            <div class="mt-1 flex items-center justify-between text-[11px] text-white/40">
+                <span x-text="pollOptions.length + '/12'"></span>
+                <span x-show="pollOptions.length < 2">⚠ {{ __('chat_poll_min') }}</span>
+            </div>
             <button
                 type="button"
-                @click="pollComposer = false; $wire.createPoll()"
-                class="mt-2 w-full rounded-lg bg-gradient-to-r from-cyan-500 to-fuchsia-500 py-2 text-sm font-bold text-white"
+                @click="publishPoll()"
+                :disabled="!pollQuestion.trim() || pollOptions.length < 2"
+                class="mt-2 w-full rounded-lg bg-gradient-to-r from-cyan-500 to-fuchsia-500 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
             >
                 {{ __('chat_poll_send') }}
             </button>
@@ -1123,7 +1117,58 @@ new class extends Component
             </div>
 
             <div x-show="activeTab === 'stickers'" class="flex h-full min-h-0 flex-col">
-                <template x-if="klipyOn">
+                <div class="mb-2 flex shrink-0 gap-1 rounded-xl border border-white/10 bg-white/5 p-1">
+                    <button
+                        type="button"
+                        @click="setStickerSource('tenor')"
+                        x-show="tenorOn"
+                        class="flex-1 rounded-lg px-2 py-1 text-[11px] font-bold transition"
+                        :class="stickerSource === 'tenor' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10'"
+                    >Tenor</button>
+                    <button
+                        type="button"
+                        @click="setStickerSource('klipy')"
+                        x-show="klipyOn"
+                        class="flex-1 rounded-lg px-2 py-1 text-[11px] font-bold transition"
+                        :class="stickerSource === 'klipy' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10'"
+                    >Klipy</button>
+                    <button
+                        type="button"
+                        @click="setStickerSource('emoji')"
+                        class="flex-1 rounded-lg px-2 py-1 text-[11px] font-bold transition"
+                        :class="stickerSource === 'emoji' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10'"
+                    >😀 Emoji</button>
+                </div>
+
+                <template x-if="stickerSource === 'tenor'">
+                    <div class="flex h-full min-h-0 flex-col">
+                        <div class="mb-2 flex shrink-0 gap-2">
+                            <input
+                                x-model="stickerQuery"
+                                @keydown.enter.prevent="searchTenor()"
+                                type="text"
+                                class="chat-input w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs outline-none placeholder:text-white/40"
+                                placeholder="{{ __('chat_search_placeholder') }}"
+                            >
+                            <button type="button" @click="searchTenor()" class="shrink-0 rounded-lg bg-white/10 px-2 text-white/70 hover:bg-white/15">
+                                <x-icon name="search" class="h-3.5 w-3.5" />
+                            </button>
+                        </div>
+                        <div class="chat-scroll grid flex-1 min-h-0 grid-cols-4 content-start gap-1 overflow-y-auto">
+                            <template x-for="s in tenorStickers" :key="'t' + (s.url || s.id)">
+                                <button
+                                    type="button"
+                                    @click="sendMedia(s, 'sticker')"
+                                    class="rounded-lg bg-black/20 p-1 transition hover:scale-110 hover:bg-white/10 active:scale-95"
+                                ><img :src="s.preview || s.url" class="chat-sticker-preview" alt="sticker" loading="lazy"></button>
+                            </template>
+                        </div>
+                        <p x-show="tenorLoading" class="shrink-0 py-2 text-center text-xs text-white/40">{{ __('chat_loading') }}</p>
+                        <p x-show="!tenorLoading && (tenorFailed || (tenorLoaded && tenorStickers.length === 0))" class="shrink-0 py-2 text-center text-xs text-white/40">{{ __('chat_no_results') }}</p>
+                    </div>
+                </template>
+
+                <template x-if="stickerSource === 'klipy' && klipyOn">
                     <div class="flex h-full min-h-0 flex-col">
                         <div class="mb-2 flex shrink-0 gap-2">
                             <input
@@ -1150,7 +1195,8 @@ new class extends Component
                         <p x-show="!stickerLoading && (stickerFailed || (stickerLoaded && klipyStickers.length === 0))" class="shrink-0 py-2 text-center text-xs text-white/40">{{ __('chat_no_results') }}</p>
                     </div>
                 </template>
-                <template x-if="!klipyOn">
+
+                <template x-if="stickerSource === 'emoji'">
                     <div class="chat-scroll grid h-full grid-cols-4 content-start gap-1 overflow-y-auto">
                         <template x-for="sticker in stickers" :key="'s' + sticker.hex">
                             <button

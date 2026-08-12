@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::livewire('/', 'pages::clock');
 
+Route::livewire('/jeux', 'pages::games');
+
 Route::get('/up', fn () => response()->json(['status' => 'ok']));
 
 Route::get('/sitemap.xml', function () {

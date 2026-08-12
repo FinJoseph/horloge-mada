@@ -14,7 +14,8 @@ class ClockPageTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Horloge Mada')
-            ->assertSee('Chat du shift');
+            ->assertSee('Chat du shift')
+            ->assertSee('settingsMenu()', false);
     }
 
     public function test_health_check_up(): void
@@ -22,6 +23,33 @@ class ClockPageTest extends TestCase
         $this->get('/up')
             ->assertOk()
             ->assertJson(['status' => 'ok']);
+    }
+
+    public function test_time_api_returns_exact_unix_time(): void
+    {
+        $response = $this->get('/api/time');
+        $response->assertOk()->assertJsonStructure(['unix', 'iso', 'tz']);
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+
+        $before = microtime(true);
+        $payload = $this->get('/api/time')->json();
+        $after = microtime(true);
+
+        $this->assertGreaterThan($before, $payload['unix']);
+        $this->assertLessThan($after + 1, $payload['unix']);
+        $this->assertSame(config('shift.timezone'), $payload['tz']);
+    }
+
+    public function test_time_api_accepts_timezone_query(): void
+    {
+        $payload = $this->get('/api/time?tz=Europe/Paris')->json();
+        $this->assertSame('Europe/Paris', $payload['tz']);
+    }
+
+    public function test_time_api_falls_back_on_invalid_timezone(): void
+    {
+        $payload = $this->get('/api/time?tz=Nope/Invalid')->json();
+        $this->assertSame(config('shift.timezone'), $payload['tz']);
     }
 
     public function test_sitemap_xml_renders(): void

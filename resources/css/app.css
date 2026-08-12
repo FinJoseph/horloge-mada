@@ -1416,3 +1416,35 @@
     --sun-bg: radial-gradient(circle at 38% 32%, #eef2ff 0%, #c4b5fd 34%, #a78bfa 58%, #818cf8 82%, #4f46e5 100%);
     --sun-shadow: inset -14px -12px 34px rgba(67, 56, 202, 0.38), inset 8px 8px 24px rgba(238, 242, 255, 0.55), 0 0 80px 22px rgba(196, 181, 253, 0.5), 0 0 200px 90px rgba(129, 140, 248, 0.16);
 }
+
+/* ==== Arènes de Dactylo (styles visuels) ==== */
+.typing-style-neon {
+    background: radial-gradient(120% 120% at 20% 0%, #16213e 0%, #0b1026 60%);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.12) inset;
+}
+
+.typing-style-retro {
+    background: radial-gradient(120% 120% at 20% 0%, #2b2340 0%, #14121f 60%);
+    border: 1px solid rgba(250, 204, 21, 0.35);
+    box-shadow: 0 0 30px rgba(250, 204, 21, 0.1) inset;
+}
+
+.typing-style-ocean {
+    background: radial-gradient(120% 120% at 20% 0%, #0b3a4d 0%, #081a26 60%);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.12) inset;
+}
+
+.typing-style-sunset {
+    background: radial-gradient(120% 120% at 20% 0%, #4c1d3d 0%, #1a0f1e 60%);
+    border: 1px solid rgba(251, 146, 60, 0.35);
+    box-shadow: 0 0 30px rgba(251, 146, 60, 0.1) inset;
+}
+
+.typing-style-neon,
+.typing-style-retro,
+.typing-style-ocean,
+.typing-style-sunset {
+    padding: 1rem;
+}
