@@ -274,10 +274,26 @@ new class extends Component
             }
 
             foreach ($m['poll']['options'] as &$opt) {
-                if (($opt['id'] ?? null) === $optionId) {
-                    $opt['votes'] = array_values(array_unique([...($opt['votes'] ?? []), $this->senderId]));
-                    break;
+                if (($opt['id'] ?? null) !== $optionId) {
+                    continue;
                 }
+
+                $votes = $opt['votes'] ?? [];
+
+                if (in_array($this->senderId, $votes, true)) {
+                    // Same choice clicked again → remove the vote
+                    $opt['votes'] = array_values(array_diff($votes, [$this->senderId]));
+                } else {
+                    // One person = one vote : remove from every other option, then vote here
+                    foreach ($m['poll']['options'] as &$other) {
+                        $other['votes'] = array_values(array_diff($other['votes'] ?? [], [$this->senderId]));
+                    }
+                    unset($other);
+
+                    $opt['votes'] = array_values(array_unique([...$votes, $this->senderId]));
+                }
+
+                break;
             }
             unset($opt);
 
@@ -736,6 +752,7 @@ new class extends Component
                                         @php
                                             $total = collect($poll['options'] ?? [])->sum(fn ($o) => count($o['votes'] ?? []));
                                             $closed = !empty($poll['closed']);
+                                            $maxVotes = $total > 0 ? max(array_map(fn ($o) => count($o['votes'] ?? []), $poll['options'] ?? [])) : 0;
                                         @endphp
                                         @foreach (($poll['options'] ?? []) as $opt)
                                             @php
@@ -743,14 +760,15 @@ new class extends Component
                                                 $pct = $total > 0 ? ($votes / $total) * 100 : 0.0;
                                                 $pctLabel = $total > 0 ? rtrim(rtrim(number_format($pct, 3, ',', ''), '0'), ',') : '0';
                                                 $voted = in_array($this->senderId, $opt['votes'] ?? [], true);
+                                                $winner = $closed && $maxVotes > 0 && $votes === $maxVotes;
                                             @endphp
                                             <button
                                                 type="button"
                                                 wire:click="votePoll('{{ $msg['id'] }}', '{{ $opt['id'] }}')"
-                                                class="poll-option {{ $voted ? 'poll-option-active' : '' }}"
+                                                class="poll-option {{ $voted ? 'poll-option-active' : '' }} {{ $winner ? 'poll-option-winner' : '' }}"
                                                 {{ $closed ? 'disabled' : '' }}
                                             >
-                                                <span class="poll-option-label">{{ $opt['label'] }}</span>
+                                                <span class="poll-option-label">{{ $winner ? '🏆 ' : '' }}{{ $opt['label'] }}</span>
                                                 <span class="poll-bar"><span class="poll-bar-fill" style="width: {{ number_format($pct, 3, '.', '') }}%"></span></span>
                                                 <span class="poll-pct">{{ $pctLabel }}%</span>
                                             </button>

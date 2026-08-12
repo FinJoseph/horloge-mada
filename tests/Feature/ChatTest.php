@@ -231,7 +231,40 @@ class ChatTest extends TestCase
         $this->assertSame([], Cache::get('chat:messages', []));
     }
 
-    public function test_vote_poll_tallies_and_dedupes(): void
+    public function test_vote_poll_one_vote_per_person_can_switch_and_unvote(): void
+    {
+        Cache::forget('chat:messages');
+
+        $creator = Livewire::test('chat')
+            ->set('username', 'Rakoto')
+            ->call('createPoll', 'Question', ['A', 'B']);
+        $sid = $creator->instance()->senderId;
+
+        $poll = collect(Cache::get('chat:messages'))->firstWhere('type', 'poll');
+        $msgId = $poll['id'];
+        $optA = $poll['poll']['options'][0]['id'];
+        $optB = $poll['poll']['options'][1]['id'];
+
+        $voter = Livewire::test('chat')->set('senderId', $sid)->call('votePoll', $msgId, $optA);
+
+        $poll = collect(Cache::get('chat:messages'))->firstWhere('type', 'poll');
+        $this->assertCount(1, $poll['poll']['options'][0]['votes']);
+        $this->assertCount(0, $poll['poll']['options'][1]['votes']);
+
+        $voter->call('votePoll', $msgId, $optB);
+
+        $poll = collect(Cache::get('chat:messages'))->firstWhere('type', 'poll');
+        $this->assertCount(0, $poll['poll']['options'][0]['votes']);
+        $this->assertCount(1, $poll['poll']['options'][1]['votes']);
+
+        $voter->call('votePoll', $msgId, $optB);
+
+        $poll = collect(Cache::get('chat:messages'))->firstWhere('type', 'poll');
+        $this->assertCount(0, $poll['poll']['options'][0]['votes']);
+        $this->assertCount(0, $poll['poll']['options'][1]['votes']);
+    }
+
+    public function test_vote_poll_no_double_vote_between_users(): void
     {
         Cache::forget('chat:messages');
 
@@ -246,17 +279,11 @@ class ChatTest extends TestCase
         $optB = $poll['poll']['options'][1]['id'];
 
         Livewire::test('chat')->set('senderId', $sid)->call('votePoll', $msgId, $optA);
+        Livewire::test('chat')->set('senderId', 'e7a4cfea3d5b4c10')->call('votePoll', $msgId, $optA);
 
         $poll = collect(Cache::get('chat:messages'))->firstWhere('type', 'poll');
-        $this->assertCount(1, $poll['poll']['options'][0]['votes']);
+        $this->assertCount(2, $poll['poll']['options'][0]['votes']);
         $this->assertCount(0, $poll['poll']['options'][1]['votes']);
-
-        Livewire::test('chat')->set('senderId', $sid)->call('votePoll', $msgId, $optA);
-        Livewire::test('chat')->set('senderId', $sid)->call('votePoll', $msgId, $optB);
-
-        $poll = collect(Cache::get('chat:messages'))->firstWhere('type', 'poll');
-        $this->assertCount(1, $poll['poll']['options'][0]['votes']);
-        $this->assertCount(1, $poll['poll']['options'][1]['votes']);
     }
 
     public function test_close_poll_only_by_author(): void
