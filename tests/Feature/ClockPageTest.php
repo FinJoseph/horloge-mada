@@ -52,9 +52,10 @@ class ClockPageTest extends TestCase
             ->assertSet('message', '');
 
         $messages = Cache::get('chat:messages');
-        $this->assertCount(1, $messages);
-        $this->assertSame('Dada', $messages[0]['user']);
-        $this->assertSame('Salut les collègues !', $messages[0]['text']);
+        $this->assertCount(2, $messages);
+        $this->assertSame('system', $messages[0]['type']);
+        $this->assertSame('Dada', $messages[1]['user']);
+        $this->assertSame('Salut les collègues !', $messages[1]['text']);
     }
 
     public function test_chat_uses_anonymous_username_when_empty(): void
@@ -66,7 +67,7 @@ class ClockPageTest extends TestCase
             ->call('send');
 
         $messages = Cache::get('chat:messages');
-        $this->assertSame('Anonyme', $messages[0]['user']);
+        $this->assertSame('Anonyme', $messages[1]['user']);
     }
 
     public function test_chat_ttl_expires_at_end_of_shift(): void

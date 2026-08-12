@@ -13,6 +13,13 @@
     --accent-2: #e879f9;
     --accent-soft: rgba(34, 211, 238, 0.35);
     --accent-2-soft: rgba(232, 121, 249, 0.35);
+    --accent-strong: #22d3ee;
+    --accent-2-strong: #e879f9;
+    --chat-bg: rgba(10, 15, 34, 0.68);
+    --sun-bg: radial-gradient(circle at 38% 32%, #fffbe8 0%, #ffe270 34%, #ffcf40 58%, #ffa726 82%, #fb8c00 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(255, 120, 0, 0.38), inset 8px 8px 24px rgba(255, 255, 240, 0.55), 0 0 80px 22px rgba(255, 214, 100, 0.5), 0 0 200px 90px rgba(255, 180, 60, 0.16);
+    --moon-bg: radial-gradient(circle at 36% 30%, #ffffff 0%, #f1f5f9 42%, #cbd5e1 72%, #94a3b8 100%);
+    --moon-shadow: inset -18px -16px 34px rgba(71, 85, 105, 0.5), inset 6px 6px 18px rgba(255, 255, 255, 0.6), 0 0 60px 18px rgba(226, 232, 240, 0.32);
 }
 
 [data-theme='night'] {
@@ -48,19 +55,19 @@
 }
 
 .sky-night {
-    background: linear-gradient(180deg, #050816 0%, #0b1026 55%, #141b3f 100%);
+    background: var(--sky-night, linear-gradient(180deg, #050816 0%, #0b1026 55%, #141b3f 100%));
 }
 
 .sky-dawn {
-    background: linear-gradient(180deg, #1e1b4b 0%, #7c3aed 45%, #f59e0b 100%);
+    background: var(--sky-dawn, linear-gradient(180deg, #1e1b4b 0%, #7c3aed 45%, #f59e0b 100%));
 }
 
 .sky-day {
-    background: linear-gradient(180deg, #0ea5e9 0%, #38bdf8 40%, #a5d8f3 70%, #cfe8f7 100%);
+    background: var(--sky-day, linear-gradient(180deg, #0ea5e9 0%, #38bdf8 40%, #a5d8f3 70%, #cfe8f7 100%));
 }
 
 .sky-dusk {
-    background: linear-gradient(180deg, #312e81 0%, #b91c1c 45%, #fb923c 80%, #fcd34d 100%);
+    background: var(--sky-dusk, linear-gradient(180deg, #312e81 0%, #b91c1c 45%, #fb923c 80%, #fcd34d 100%));
 }
 
 .stars {
@@ -87,12 +94,8 @@
     width: 120px;
     height: 120px;
     border-radius: 9999px;
-    background: radial-gradient(circle at 38% 32%, #fffbe8 0%, #ffe270 34%, #ffcf40 58%, #ffa726 82%, #fb8c00 100%);
-    box-shadow:
-        inset -14px -12px 34px rgba(255, 120, 0, 0.38),
-        inset 8px 8px 24px rgba(255, 255, 240, 0.55),
-        0 0 80px 22px rgba(255, 214, 100, 0.5),
-        0 0 200px 90px rgba(255, 180, 60, 0.16);
+    background: var(--sun-bg);
+    box-shadow: var(--sun-shadow);
     animation: sunPulse 4s ease-in-out infinite;
     transform-style: preserve-3d;
 }
@@ -145,11 +148,8 @@
     width: 100px;
     height: 100px;
     border-radius: 9999px;
-    background: radial-gradient(circle at 36% 30%, #ffffff 0%, #f1f5f9 42%, #cbd5e1 72%, #94a3b8 100%);
-    box-shadow:
-        inset -18px -16px 34px rgba(71, 85, 105, 0.5),
-        inset 6px 6px 18px rgba(255, 255, 255, 0.6),
-        0 0 60px 18px rgba(226, 232, 240, 0.32);
+    background: var(--moon-bg);
+    box-shadow: var(--moon-shadow);
     animation: moonFloat 6s ease-in-out infinite;
     transform-style: preserve-3d;
 }
@@ -186,11 +186,17 @@
 }
 
 .glass {
-    background: rgba(255, 255, 255, 0.07);
+    background: var(--glass-bg, rgba(255, 255, 255, 0.09));
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.chat-card {
+    background: var(--chat-bg, rgba(10, 15, 34, 0.68));
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
 }
 
 .dropdown-panel {
@@ -324,7 +330,7 @@
 }
 
 .animate-fade-up {
-    animation: fadeUp 0.35s ease both;
+    animation: fadeUp 0.35s ease;
 }
 
 @keyframes fadeUp {
@@ -568,4 +574,845 @@
 
 .chat-sticker-preview:hover {
     transform: scale(1.18) rotate(-4deg);
+}
+
+/* ==== Chat UI (Messenger style) ==== */
+.chat-bubble {
+    position: relative;
+    border-radius: 16px;
+    max-width: 100%;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+    transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.chat-bubble:hover {
+    filter: brightness(1.12);
+}
+
+.chat-bubble-in {
+    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom-left-radius: 4px;
+}
+
+.chat-bubble-out {
+    color: rgba(2, 6, 23, 0.92);
+    background: linear-gradient(135deg, var(--accent-strong), var(--accent-2-strong));
+    border-bottom-right-radius: 4px;
+}
+
+.chat-bubble-out .chat-meta {
+    color: rgba(2, 6, 23, 0.55);
+}
+
+.chat-bubble-out .chat-meta svg {
+    color: rgba(2, 6, 23, 0.65);
+}
+
+.chat-meta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    float: right;
+    margin: 6px -2px -4px 8px;
+    opacity: 0.75;
+    user-select: none;
+}
+
+.chat-username {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.01em;
+}
+
+.chat-time {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.delete-msg {
+    position: absolute;
+    top: 6px;
+    right: -30px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 9999px;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+    z-index: 5;
+}
+
+.delete-msg:hover {
+    transform: scale(1.15);
+    background: rgba(244, 63, 94, 0.25);
+    color: #fff;
+}
+
+@media (hover: hover) {
+    .msg-row:hover .delete-msg {
+        display: flex;
+    }
+}
+
+.reaction-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 12px;
+    line-height: 1.4;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.85);
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.reaction-pill:hover {
+    transform: scale(1.12);
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.reaction-pill-active {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.reaction-count {
+    font-size: 11px;
+    opacity: 0.7;
+    font-variant-numeric: tabular-nums;
+}
+
+.react-plus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 9999px;
+    color: rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.react-plus:hover {
+    transform: scale(1.15);
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.quick-react {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 2px;
+    padding: 6px 8px;
+    border-radius: 9999px;
+    background: rgba(15, 23, 42, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    z-index: 30;
+    white-space: nowrap;
+}
+
+.quick-react button {
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 9999px;
+    transition: transform 0.12s ease;
+}
+
+.quick-react button:hover {
+    transform: scale(1.35);
+}
+
+.typing-bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 11px 15px;
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.typing-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.6);
+    animation: typingBlink 1.2s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.typing-dot:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes typingBlink {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.chat-down {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 9999px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.chat-down:hover {
+    transform: scale(1.1);
+    filter: brightness(1.1);
+}
+
+.chat-unread {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9999px;
+    background: #f43f5e;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-mention {
+    color: var(--accent);
+    font-weight: 600;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    padding: 0 4px;
+    border-radius: 6px;
+}
+
+.chat-link {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    word-break: break-all;
+}
+
+.chat-send-btn:active {
+    transform: scale(0.95);
+}
+
+/* ==== Day separators + system messages ==== */
+.day-sep {
+    display: flex;
+    justify-content: center;
+    margin: 6px 0 2px;
+}
+
+.day-sep span {
+    padding: 4px 14px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(6px);
+    white-space: nowrap;
+}
+
+.sys-pill {
+    padding: 4px 14px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    text-align: center;
+    max-width: 90%;
+}
+
+/* ==== Forwarded / edited / reply quote ==== */
+.msg-forwarded {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.6;
+    margin-bottom: 4px;
+}
+
+.msg-edited {
+    font-size: 10px;
+    opacity: 0.5;
+    margin-left: 4px;
+}
+
+.chat-reply-quote {
+    border-left: 3px solid var(--accent);
+    padding: 4px 10px;
+    margin-bottom: 6px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    cursor: default;
+}
+
+.chat-bubble-out .chat-reply-quote {
+    background: rgba(2, 6, 23, 0.1);
+}
+
+/* ==== Read receipts ==== */
+.chat-tick {
+    color: rgba(2, 6, 23, 0.55);
+}
+
+.chat-tick-read {
+    color: #0e7490;
+}
+
+/* ==== Media messages ==== */
+.chat-media {
+    display: block;
+    max-width: 220px;
+    max-height: 180px;
+    border-radius: 10px;
+    object-fit: contain;
+    margin: -2px 0 2px;
+}
+
+@media (max-width: 480px) {
+    .chat-media {
+        max-width: 170px;
+        max-height: 150px;
+    }
+}
+
+/* ==== Message menu (⋯) ==== */
+.msg-row {
+    position: relative;
+}
+
+.msg-menu-wrap {
+    position: relative;
+    z-index: 6;
+    flex-shrink: 0;
+}
+
+.msg-menu-wrap-out .msg-menu {
+    right: 0;
+    left: auto;
+}
+
+.msg-menu-wrap-in .msg-menu {
+    left: 0;
+    right: auto;
+}
+
+.msg-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 9999px;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+.msg-menu-btn:hover {
+    transform: scale(1.15);
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.msg-row:hover .msg-menu-btn {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (hover: none) {
+    .msg-menu-btn {
+        opacity: 0.85;
+        pointer-events: auto;
+    }
+}
+
+.msg-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 176px;
+    padding: 6px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+}
+
+.msg-menu-wrap.open-up .msg-menu {
+    top: auto;
+    bottom: calc(100% + 8px);
+}
+
+.msg-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.88);
+    text-align: left;
+    transition: background 0.12s ease;
+    white-space: nowrap;
+}
+
+.msg-menu button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ==== Search ==== */
+.chat-search-hit {
+    background: rgba(250, 204, 21, 0.35);
+    color: inherit;
+    border-radius: 3px;
+    padding: 0 1px;
+}
+
+/* ==== Emoji picker (emoji-picker-element) ==== */
+.chat-emoji-picker {
+    --background: transparent;
+    --border-radius: 12px;
+    --category-font-size: 0.7rem;
+    --category-emoji-size: 1rem;
+    --num-columns: 8;
+    --element-size: 2.3rem;
+    --hover-background: rgba(255, 255, 255, 0.1);
+    --accent-color: var(--accent);
+    --text-color: rgba(255, 255, 255, 0.9);
+    --button-active-background: color-mix(in srgb, var(--accent) 20%, transparent);
+    --input-border-color: rgba(255, 255, 255, 0.12);
+    --input-font-size: 0.8rem;
+    --input-padding: 0.4rem 0.6rem;
+    --input-background: rgba(255, 255, 255, 0.05);
+    --input-placeholder-color: rgba(255, 255, 255, 0.4);
+    --indicator-color: var(--accent);
+    --category-indicator-color: var(--accent);
+    font-family: inherit;
+}
+
+@media (max-width: 480px) {
+    .chat-emoji-picker {
+        --num-columns: 7;
+        --element-size: 2.1rem;
+    }
+}
+
+/* ==== Picker: bottom sheet on mobile ==== */
+@media (max-width: 639px) {
+    .picker-sheet {
+        position: fixed;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        z-index: 60;
+        height: 62vh !important;
+        max-height: 420px;
+        border-radius: 18px !important;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* ==== Picker: opaque square panel ==== */
+.picker-sheet {
+    height: 250px;
+    background: linear-gradient(180deg, #1b2440 0%, #111a30 100%);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+    border-radius: 16px;
+}
+
+/* ==== Sondages (poll cards) ==== */
+.poll-card {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.poll-card-out {
+    background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 18%, transparent) 0%, color-mix(in srgb, var(--accent-2) 12%, transparent) 100%);
+}
+
+.poll-question {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 8px;
+}
+
+.poll-question svg {
+    color: var(--accent);
+}
+
+.poll-option {
+    position: relative;
+    display: block;
+    width: 100%;
+    margin-bottom: 6px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.78rem;
+    text-align: left;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.poll-option:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.poll-option:disabled {
+    cursor: default;
+    opacity: 0.85;
+}
+
+.poll-option-active {
+    border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.poll-option-active::after {
+    content: '✓';
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    font-size: 0.8rem;
+    color: var(--accent);
+}
+
+.poll-option-label {
+    position: relative;
+    z-index: 1;
+    display: block;
+    padding-right: 22px;
+}
+
+.poll-bar {
+    position: absolute;
+    inset: 0;
+    right: auto;
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+    z-index: 0;
+    border-radius: 10px;
+}
+
+.poll-bar-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 45%, transparent), color-mix(in srgb, var(--accent-2) 35%, transparent));
+    border-radius: 10px;
+    transition: width 0.4s ease;
+}
+
+.poll-pct {
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    z-index: 1;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    padding-right: 14px;
+}
+
+.poll-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.poll-total {
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.poll-closed {
+    color: #fbbf24;
+}
+
+.poll-close {
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    color: #fbbf24;
+    font-size: 0.68rem;
+    transition: background 0.15s ease;
+}
+
+.poll-close:hover {
+    background: rgba(251, 191, 36, 0.15);
+}
+
+/* ==== Annonces ==== */
+.announce-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 100%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.14), rgba(249, 115, 22, 0.1));
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.announce-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9999px;
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+}
+
+.announce-head {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #fbbf24;
+    margin-bottom: 2px;
+}
+
+.announce-text {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.95);
+    line-height: 1.45;
+}
+
+/* ==== Thèmes (data-app-theme sur <html> et la racine de l'horloge) ==== */
+[data-app-theme='foot'] {
+    --accent: #22c55e;
+    --accent-2: #facc15;
+    --accent-soft: rgba(34, 197, 94, 0.35);
+    --accent-2-soft: rgba(250, 204, 21, 0.35);
+    --accent-strong: #22c55e;
+    --accent-2-strong: #facc15;
+    --chat-bg: rgba(6, 78, 59, 0.72);
+    --sky-day: linear-gradient(180deg, #065f46 0%, #059669 45%, #6ee7b7 80%, #d1fae5 100%);
+    --sky-night: linear-gradient(180deg, #022c22 0%, #064e3b 55%, #134e4a 100%);
+    --sky-dawn: linear-gradient(180deg, #064e3b 0%, #059669 45%, #fef08a 100%);
+    --sky-dusk: linear-gradient(180deg, #052e2b 0%, #16a34a 45%, #fbbf24 80%, #fef3c7 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #fefce8 0%, #fde047 34%, #facc15 58%, #eab308 82%, #ca8a04 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(161, 98, 7, 0.38), inset 8px 8px 24px rgba(255, 255, 240, 0.55), 0 0 80px 22px rgba(253, 224, 71, 0.5), 0 0 200px 90px rgba(234, 179, 8, 0.16);
+}
+
+[data-app-theme='fleur'] {
+    --accent: #ec4899;
+    --accent-2: #a855f7;
+    --accent-soft: rgba(236, 72, 153, 0.35);
+    --accent-2-soft: rgba(168, 85, 247, 0.35);
+    --accent-strong: #ec4899;
+    --accent-2-strong: #a855f7;
+    --chat-bg: rgba(59, 7, 100, 0.68);
+    --sky-day: linear-gradient(180deg, #86198f 0%, #c026d3 45%, #f0abfc 80%, #fdf2f8 100%);
+    --sky-night: linear-gradient(180deg, #3b0764 0%, #701a75 55%, #a21caf 100%);
+    --sky-dawn: linear-gradient(180deg, #4a044e 0%, #c026d3 45%, #f9a8d4 100%);
+    --sky-dusk: linear-gradient(180deg, #4a044e 0%, #be185d 45%, #fb923c 80%, #ffe4e6 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #fff5f7 0%, #fda4af 34%, #fb7185 58%, #f43f5e 82%, #e11d48 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(159, 18, 57, 0.38), inset 8px 8px 24px rgba(255, 245, 247, 0.55), 0 0 80px 22px rgba(253, 164, 175, 0.5), 0 0 200px 90px rgba(244, 63, 94, 0.16);
+}
+
+[data-app-theme='amour'] {
+    --accent: #f43f5e;
+    --accent-2: #fb7185;
+    --accent-soft: rgba(244, 63, 94, 0.35);
+    --accent-2-soft: rgba(251, 113, 133, 0.35);
+    --accent-strong: #f43f5e;
+    --accent-2-strong: #fb7185;
+    --chat-bg: rgba(76, 5, 25, 0.7);
+    --sky-day: linear-gradient(180deg, #881337 0%, #e11d48 45%, #fda4af 80%, #fff1f2 100%);
+    --sky-night: linear-gradient(180deg, #4c0519 0%, #881337 55%, #9f1239 100%);
+    --sky-dawn: linear-gradient(180deg, #4c0519 0%, #be123c 45%, #fda4af 100%);
+    --sky-dusk: linear-gradient(180deg, #4c0519 0%, #e11d48 45%, #fbbf24 80%, #ffe4e6 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #fff1f2 0%, #fda4af 34%, #fb7185 58%, #f43f5e 82%, #be123c 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(136, 19, 55, 0.38), inset 8px 8px 24px rgba(255, 241, 242, 0.55), 0 0 80px 22px rgba(253, 164, 175, 0.5), 0 0 200px 90px rgba(244, 63, 94, 0.16);
+}
+
+[data-app-theme='tech'] {
+    --accent: #22d3ee;
+    --accent-2: #a3e635;
+    --accent-soft: rgba(34, 211, 238, 0.35);
+    --accent-2-soft: rgba(163, 230, 53, 0.35);
+    --accent-strong: #22d3ee;
+    --accent-2-strong: #a3e635;
+    --chat-bg: rgba(3, 15, 31, 0.72);
+    --sky-day: linear-gradient(180deg, #06222f 0%, #0e7490 45%, #67e8f9 80%, #ecfeff 100%);
+    --sky-night: linear-gradient(180deg, #020617 0%, #082f49 55%, #155e75 100%);
+    --sky-dawn: linear-gradient(180deg, #020617 0%, #0e7490 45%, #67e8f9 100%);
+    --sky-dusk: linear-gradient(180deg, #020617 0%, #0e7490 45%, #a3e635 80%, #ecfeff 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #f0fdff 0%, #67e8f9 34%, #22d3ee 58%, #0ea5e9 82%, #0369a1 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(3, 105, 161, 0.38), inset 8px 8px 24px rgba(240, 253, 255, 0.55), 0 0 80px 22px rgba(103, 232, 249, 0.5), 0 0 200px 90px rgba(14, 165, 233, 0.16);
+}
+
+[data-app-theme='cool'] {
+    --accent: #60a5fa;
+    --accent-2: #94a3b8;
+    --accent-soft: rgba(96, 165, 250, 0.35);
+    --accent-2-soft: rgba(148, 163, 184, 0.35);
+    --accent-strong: #60a5fa;
+    --accent-2-strong: #94a3b8;
+    --chat-bg: rgba(15, 23, 42, 0.72);
+    --sky-day: linear-gradient(180deg, #1e293b 0%, #475569 45%, #94a3b8 80%, #e2e8f0 100%);
+    --sky-night: linear-gradient(180deg, #020617 0%, #0f172a 55%, #1e293b 100%);
+    --sky-dawn: linear-gradient(180deg, #0f172a 0%, #334155 45%, #cbd5e1 100%);
+    --sky-dusk: linear-gradient(180deg, #0f172a 0%, #475569 45%, #94a3b8 80%, #f1f5f9 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #f8fafc 0%, #cbd5e1 34%, #94a3b8 58%, #64748b 82%, #475569 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(51, 65, 85, 0.38), inset 8px 8px 24px rgba(255, 255, 255, 0.55), 0 0 80px 22px rgba(203, 213, 225, 0.5), 0 0 200px 90px rgba(148, 163, 184, 0.16);
+}
+
+[data-app-theme='reggae'] {
+    --accent: #16a34a;
+    --accent-2: #f59e0b;
+    --accent-soft: rgba(22, 163, 74, 0.35);
+    --accent-2-soft: rgba(245, 158, 11, 0.35);
+    --accent-strong: #16a34a;
+    --accent-2-strong: #f59e0b;
+    --chat-bg: rgba(20, 40, 10, 0.72);
+    --sky-day: linear-gradient(180deg, #14532d 0%, #16a34a 45%, #fde047 80%, #fef9c3 100%);
+    --sky-night: linear-gradient(180deg, #052e16 0%, #166534 55%, #15803d 100%);
+    --sky-dawn: linear-gradient(180deg, #052e16 0%, #16a34a 45%, #fbbf24 100%);
+    --sky-dusk: linear-gradient(180deg, #052e16 0%, #b91c1c 45%, #fbbf24 80%, #fde68a 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #fefce8 0%, #fde047 34%, #facc15 58%, #eab308 82%, #ca8a04 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(161, 98, 7, 0.38), inset 8px 8px 24px rgba(255, 255, 240, 0.55), 0 0 80px 22px rgba(253, 224, 71, 0.5), 0 0 200px 90px rgba(234, 179, 8, 0.16);
+}
+
+[data-app-theme='geek'] {
+    --accent: #4ade80;
+    --accent-2: #a855f7;
+    --accent-soft: rgba(74, 222, 128, 0.35);
+    --accent-2-soft: rgba(168, 85, 247, 0.35);
+    --accent-strong: #4ade80;
+    --accent-2-strong: #a855f7;
+    --chat-bg: rgba(5, 26, 16, 0.72);
+    --sky-day: linear-gradient(180deg, #052e16 0%, #15803d 45%, #86efac 80%, #ecfdf5 100%);
+    --sky-night: linear-gradient(180deg, #02140a 0%, #052e16 55%, #14532d 100%);
+    --sky-dawn: linear-gradient(180deg, #02140a 0%, #16a34a 45%, #d8b4fe 100%);
+    --sky-dusk: linear-gradient(180deg, #02140a 0%, #15803d 45%, #a855f7 80%, #ecfdf5 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #f0fdf4 0%, #86efac 34%, #4ade80 58%, #22c55e 82%, #15803d 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(21, 128, 61, 0.38), inset 8px 8px 24px rgba(240, 253, 244, 0.55), 0 0 80px 22px rgba(134, 239, 172, 0.5), 0 0 200px 90px rgba(34, 197, 94, 0.16);
+}
+
+[data-app-theme='animaux'] {
+    --accent: #f59e0b;
+    --accent-2: #65a30d;
+    --accent-soft: rgba(245, 158, 11, 0.35);
+    --accent-2-soft: rgba(101, 163, 13, 0.35);
+    --accent-strong: #f59e0b;
+    --accent-2-strong: #65a30d;
+    --chat-bg: rgba(30, 24, 4, 0.72);
+    --sky-day: linear-gradient(180deg, #78350f 0%, #d97706 45%, #fcd34d 80%, #fefce8 100%);
+    --sky-night: linear-gradient(180deg, #1c1917 0%, #292524 55%, #44403c 100%);
+    --sky-dawn: linear-gradient(180deg, #291906 0%, #d97706 45%, #fde68a 100%);
+    --sky-dusk: linear-gradient(180deg, #291906 0%, #b45309 45%, #65a30d 80%, #fef3c7 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #fffbeb 0%, #fcd34d 34%, #fbbf24 58%, #f59e0b 82%, #b45309 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(146, 64, 14, 0.38), inset 8px 8px 24px rgba(255, 251, 235, 0.55), 0 0 80px 22px rgba(252, 211, 77, 0.5), 0 0 200px 90px rgba(245, 158, 11, 0.16);
+}
+
+[data-app-theme='ocean'] {
+    --accent: #38bdf8;
+    --accent-2: #2dd4bf;
+    --accent-soft: rgba(56, 189, 248, 0.35);
+    --accent-2-soft: rgba(45, 212, 191, 0.35);
+    --accent-strong: #38bdf8;
+    --accent-2-strong: #2dd4bf;
+    --chat-bg: rgba(8, 31, 51, 0.72);
+    --sky-day: linear-gradient(180deg, #0c4a6e 0%, #0284c7 45%, #7dd3fc 80%, #e0f2fe 100%);
+    --sky-night: linear-gradient(180deg, #020617 0%, #082f49 55%, #155e75 100%);
+    --sky-dawn: linear-gradient(180deg, #082f49 0%, #0369a1 45%, #a5f3fc 100%);
+    --sky-dusk: linear-gradient(180deg, #082f49 0%, #0284c7 45%, #2dd4bf 80%, #cffafe 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #f0fdff 0%, #a5f3fc 34%, #67e8f9 58%, #22d3ee 82%, #0891b2 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(8, 145, 178, 0.38), inset 8px 8px 24px rgba(240, 253, 255, 0.55), 0 0 80px 22px rgba(165, 243, 252, 0.5), 0 0 200px 90px rgba(34, 211, 238, 0.16);
+}
+
+[data-app-theme='noel'] {
+    --accent: #ef4444;
+    --accent-2: #22c55e;
+    --accent-soft: rgba(239, 68, 68, 0.35);
+    --accent-2-soft: rgba(34, 197, 94, 0.35);
+    --accent-strong: #ef4444;
+    --accent-2-strong: #22c55e;
+    --chat-bg: rgba(30, 10, 10, 0.72);
+    --sky-day: linear-gradient(180deg, #7f1d1d 0%, #dc2626 45%, #86efac 80%, #fef9c3 100%);
+    --sky-night: linear-gradient(180deg, #1a0b0b 0%, #450a0a 55%, #166534 100%);
+    --sky-dawn: linear-gradient(180deg, #1a0b0b 0%, #b91c1c 45%, #fde68a 100%);
+    --sky-dusk: linear-gradient(180deg, #1a0b0b 0%, #b91c1c 45%, #16a34a 80%, #fef3c7 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #fff7ed 0%, #fca5a5 34%, #f87171 58%, #ef4444 82%, #b91c1c 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(153, 27, 27, 0.38), inset 8px 8px 24px rgba(255, 247, 237, 0.55), 0 0 80px 22px rgba(252, 165, 165, 0.5), 0 0 200px 90px rgba(239, 68, 68, 0.16);
+}
+
+[data-app-theme='nuit'] {
+    --accent: #818cf8;
+    --accent-2: #c084fc;
+    --accent-soft: rgba(129, 140, 248, 0.35);
+    --accent-2-soft: rgba(192, 132, 252, 0.35);
+    --accent-strong: #818cf8;
+    --accent-2-strong: #c084fc;
+    --chat-bg: rgba(20, 13, 40, 0.72);
+    --sky-day: linear-gradient(180deg, #312e81 0%, #6d28d9 45%, #a5b4fc 80%, #eef2ff 100%);
+    --sky-night: linear-gradient(180deg, #0f0a1f 0%, #1e1b4b 55%, #4338ca 100%);
+    --sky-dawn: linear-gradient(180deg, #1e1b4b 0%, #7c3aed 45%, #c4b5fd 100%);
+    --sky-dusk: linear-gradient(180deg, #1e1b4b 0%, #6d28d9 45%, #fb923c 80%, #ede9fe 100%);
+    --sun-bg: radial-gradient(circle at 38% 32%, #eef2ff 0%, #c4b5fd 34%, #a78bfa 58%, #818cf8 82%, #4f46e5 100%);
+    --sun-shadow: inset -14px -12px 34px rgba(67, 56, 202, 0.38), inset 8px 8px 24px rgba(238, 242, 255, 0.55), 0 0 80px 22px rgba(196, 181, 253, 0.5), 0 0 200px 90px rgba(129, 140, 248, 0.16);
 }

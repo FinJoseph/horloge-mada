@@ -1,4 +1,49 @@
 import { EMOJI_CATEGORIES, STICKERS, GIFS } from './emoji.js';
+import intersect from '@alpinejs/intersect';
+import persist from '@alpinejs/persist';
+import 'emoji-picker-element';
+import emojiDataUrl from 'emoji-picker-element-data/en/emojibase/data.json?url';
+
+function registerPlugins() {
+    const A = window.Alpine;
+    if (!A || A.__chatPlugins) return;
+    A.__chatPlugins = true;
+    A.plugin(intersect);
+    if (!window.Alpine.__fromLivewire) {
+        A.plugin(persist);
+    }
+}
+
+if (window.Alpine) {
+    registerPlugins();
+} else {
+    document.addEventListener('alpine:init', registerPlugins, { once: true });
+}
+
+const THEMES = [
+    { id: 'classic', emoji: '🌙', name: 'Classic', mascot: '🐱' },
+    { id: 'foot', emoji: '⚽', name: 'Foot', mascot: '⚽' },
+    { id: 'fleur', emoji: '🌸', name: 'Fleur', mascot: '🌸' },
+    { id: 'amour', emoji: '❤️', name: 'Amour', mascot: '🥰' },
+    { id: 'tech', emoji: '💻', name: 'Tech', mascot: '🤖' },
+    { id: 'cool', emoji: '🕶️', name: 'Cool', mascot: '😎' },
+    { id: 'reggae', emoji: '🇯🇲', name: 'Reggae', mascot: '🦜' },
+    { id: 'geek', emoji: '👾', name: 'Geek', mascot: '👾' },
+    { id: 'animaux', emoji: '🐾', name: 'Animaux', mascot: '🦁' },
+    { id: 'ocean', emoji: '🌊', name: 'Océan', mascot: '🐬' },
+    { id: 'noel', emoji: '🎄', name: 'Noël', mascot: '🎅' },
+    { id: 'nuit', emoji: '✨', name: 'Nuit', mascot: '🌙' },
+];
+
+const savedTheme = (() => {
+    try {
+        return localStorage.getItem('mada-theme') || 'classic';
+    } catch {
+        return 'classic';
+    }
+})();
+
+document.documentElement.setAttribute('data-app-theme', savedTheme);
 
 const MADA_TZ = 'Indian/Antananarivo';
 
@@ -172,6 +217,7 @@ window.madaClock = () => {
         p: {},
         timer: null,
         soundOn: localStorage.getItem('mada-sound') !== 'off',
+        appThemeId: savedTheme,
         audio: null,
         toast: null,
         toastTimer: null,
@@ -182,6 +228,9 @@ window.madaClock = () => {
             this.tick();
             this.timer = setInterval(() => this.tick(), 100);
             document.addEventListener('pointerdown', () => this.unlockAudio(), { once: true });
+            window.addEventListener('app-theme', (e) => {
+                this.appThemeId = e.detail;
+            });
         },
 
         destroy() {
@@ -393,6 +442,22 @@ window.languagePicker = () => ({
     },
 });
 
+window.themePicker = () => ({
+    open: false,
+    themes: THEMES,
+    current: savedTheme,
+    setTheme(id) {
+        this.current = id;
+        try {
+            localStorage.setItem('mada-theme', id);
+        } catch {
+            /* noop */
+        }
+        document.documentElement.setAttribute('data-app-theme', id);
+        window.dispatchEvent(new CustomEvent('app-theme', { detail: id }));
+    },
+});
+
 window.madaCat = () => {
     let vw = () => Math.max(360, window.innerWidth);
     let vh = () => Math.max(480, window.innerHeight);
@@ -407,6 +472,7 @@ window.madaCat = () => {
         now: new Date(),
         p: {},
         timer: null,
+        themeId: savedTheme,
         bubble: '',
         bubbleTimer: null,
         bubbleClear: null,
@@ -420,6 +486,9 @@ window.madaCat = () => {
             this.showBubble();
             this.bubbleTimer = setInterval(() => this.showBubble(), 15000);
             setTimeout(() => this.roam(), 400);
+            window.addEventListener('app-theme', (e) => {
+                this.themeId = e.detail;
+            });
         },
 
         destroy() {
@@ -435,8 +504,8 @@ window.madaCat = () => {
         },
 
         mood() {
-            const key = phaseKeyFor(this.p.h * 60 + this.p.m, SHIFT);
-            return { key, emoji: CAT_MOODS[key] || '🐱' };
+            const meta = THEMES.find((t) => t.id === this.themeId) || THEMES[0];
+            return { key: phaseKeyFor(this.p.h * 60 + this.p.m, SHIFT), emoji: meta.mascot };
         },
 
         showBubble() {
@@ -468,28 +537,474 @@ window.madaCat = () => {
     };
 };
 
+const chatMeta = (() => {
+    const el = document.getElementById('chat-config');
+    if (!el) return { klipy: false, delete_confirm: 'Supprimer ce message ?', sender_id: '' };
+    try {
+        return JSON.parse(el.textContent);
+    } catch {
+        return { klipy: false, delete_confirm: 'Supprimer ce message ?', sender_id: '' };
+    }
+})();
+
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 window.chatComposer = () => ({
     picker: false,
-    activeTab: 'emoji',
-    category: EMOJI_CATEGORIES[0].id,
+    pickerStyle: {},
+    pollComposer: false,
+    announceComposer: false,
+    activeTab: window.Alpine.$persist('emoji'),
+    soundOn: window.Alpine.$persist(true),
+    category: null,
     categories: EMOJI_CATEGORIES,
     stickers: STICKERS,
     gifs: GIFS,
+    chars: 0,
+    scrolledUp: false,
+    unread: 0,
+    copied: false,
+    lastTitle: document.title,
+    audio: null,
+
+    emojiDataSource: emojiDataUrl,
+
+    replyTo: null,
+    editingId: null,
+    editingText: '',
+
+    menuId: null,
+
+    searchOpen: false,
+    searchQ: '',
+    searchEmpty: false,
+
+    klipyOn: !!chatMeta.klipy,
+    klipyGifs: [],
+    klipyStickers: [],
+    gifQuery: '',
+    stickerQuery: '',
+    gifLoaded: false,
+    stickerLoaded: false,
+    gifLoading: false,
+    stickerLoading: false,
+    gifFailed: false,
+    stickerFailed: false,
+
     emojiUrl: (hex) => `https://fonts.gstatic.com/s/e/notoemoji/latest/${hex}/512.gif`,
+
+    init() {
+        this.lastTitle = document.title;
+        document.addEventListener('pointerdown', () => this.unlockAudio(), { once: true });
+        document.addEventListener('keydown', () => this.unlockAudio(), { once: true });
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) this.resetNotif(); });
+    },
+
+    destroy() {
+        document.title = this.lastTitle;
+    },
+
+    unlockAudio() {
+        if (!this.audio) {
+            this.audio = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.audio.state === 'suspended') {
+            this.audio.resume().catch(() => {});
+        }
+    },
+
+    beep(freq = 720, dur = 0.15) {
+        if (!this.soundOn || !this.audio) return;
+        const osc = this.audio.createOscillator();
+        const gain = this.audio.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(this.audio.destination);
+        const t = this.audio.currentTime;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.2, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.start(t);
+        osc.stop(t + dur + 0.05);
+    },
+
+    resetNotif() {
+        if (this.unread > 0 || document.title !== this.lastTitle) {
+            this.unread = 0;
+            document.title = this.lastTitle;
+        }
+    },
+
     addEmoji(emoji) {
+        const unicode = Array.isArray(emoji) ? emoji[0] : emoji;
+        if (!unicode) return;
         const input = this.$refs.msgInput;
         if (!input) return;
         const start = input.selectionStart ?? input.value.length;
         const end = input.selectionEnd ?? input.value.length;
-        input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+        input.value = input.value.slice(0, start) + unicode + input.value.slice(end);
         input.dispatchEvent(new Event('input', { bubbles: true }));
+        this.chars = input.value.length;
+        this.autoGrow(input);
         input.focus();
     },
+
     addSticker(hex) {
         this.addEmoji(` [[stk:${hex}]] `);
     },
+
+    onEmojiClick(e) {
+        this.addEmoji(e.detail.unicode);
+    },
+
+    autoGrow(el) {
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    },
+
+    async togglePicker(e) {
+        this.picker = !this.picker;
+        this.pollComposer = false;
+        this.announceComposer = false;
+        if (this.picker) {
+            this.$nextTick(() => this.placePicker(e));
+        }
+    },
+
+    placePicker(e) {
+        const panel = this.$refs.pickerPanel;
+        if (!panel) return;
+        if (window.innerWidth < 640) {
+            this.pickerStyle = {};
+            return;
+        }
+        const btn = (e && e.currentTarget) || this.$refs.pickerBtn;
+        const rect = btn ? btn.getBoundingClientRect() : { left: 12, top: window.innerHeight - 60 };
+        const size = Math.min(420, window.innerWidth - 16, window.innerHeight - 140);
+        let left = rect.left;
+        let bottom = window.innerHeight - rect.top + 10;
+        if (left + size > window.innerWidth - 8) left = Math.max(8, window.innerWidth - size - 8);
+        if (bottom > window.innerHeight - 8) bottom = 8;
+        this.pickerStyle = {
+            position: 'fixed',
+            left: `${left}px`,
+            bottom: `${bottom}px`,
+            width: `${size}px`,
+            height: `${size}px`,
+            zIndex: 70,
+        };
+    },
+
+    closePicker() {
+        this.picker = false;
+    },
+
+    async submitChat() {
+        if (this.editingId) {
+            const id = this.editingId;
+            const text = this.editingText.trim();
+            if (!text) return;
+            this.editingId = null;
+            this.editingText = '';
+            this.replyTo = null;
+            this.$wire.updateMessage(id, text);
+            return;
+        }
+        const input = this.$refs.msgInput;
+        if (!input || !input.value.trim()) return;
+        const text = input.value.trim();
+        input.value = '';
+        this.autoGrow(input);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        await this.$wire.set('message', text, true);
+        const r = this.$refs.replyInput;
+        if (r) {
+            r.value = this.replyTo ? this.replyTo.id : '';
+            r.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        this.chars = 0;
+        this.replyTo = null;
+        this.$wire.send();
+    },
+
+    _row(id) {
+        return this.$root.querySelector(`.msg-row[data-id="${id}"]`);
+    },
+
+    toggleMenu(id) {
+        this.menuId = this.menuId === id ? null : id;
+        this.$nextTick(() => this.placeMenu(id));
+    },
+
+    placeMenu(id) {
+        const wrap = this.$root.querySelector(`.msg-row[data-id="${id}"] .msg-menu-wrap`);
+        const menu = wrap && wrap.querySelector('.msg-menu');
+        const scroll = this.$refs.scroll;
+        if (!wrap || !menu || !scroll || !menu.offsetHeight) return;
+        wrap.classList.remove('open-up');
+        const sr = scroll.getBoundingClientRect();
+        const wr = wrap.getBoundingClientRect();
+        const roomBelow = sr.bottom - wr.bottom - 8;
+        const roomAbove = wr.top - sr.top - 8;
+        const fitsBelow = roomBelow >= menu.offsetHeight;
+        const fitsAbove = roomAbove >= menu.offsetHeight;
+        if (fitsAbove && (!fitsBelow || roomAbove > roomBelow)) {
+            wrap.classList.add('open-up');
+        }
+    },
+
+    startReply(id) {
+        const row = this._row(id);
+        if (!row) return;
+        this.replyTo = { id, user: row.dataset.user || '', text: row.dataset.text || '' };
+        this.menuId = null;
+        this.$nextTick(() => {
+            const r = this.$refs.replyInput;
+            if (r) {
+                r.value = this.replyTo.id;
+                r.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            const ta = this.$refs.msgInput;
+            if (ta) ta.focus();
+        });
+    },
+
+    clearReply() {
+        this.replyTo = null;
+        const r = this.$refs.replyInput;
+        if (r) {
+            r.value = '';
+            r.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    },
+
+    startEdit(id) {
+        const row = this._row(id);
+        if (!row) return;
+        this.editingId = id;
+        this.editingText = row.dataset.text || '';
+        this.replyTo = null;
+        this.menuId = null;
+        this.picker = false;
+        this.$nextTick(() => {
+            const ta = this.$refs.editInput;
+            if (ta) {
+                ta.focus();
+                ta.setSelectionRange(ta.value.length, ta.value.length);
+                this.autoGrow(ta);
+            }
+        });
+    },
+
+    cancelEdit() {
+        this.editingId = null;
+        this.editingText = '';
+    },
+
+    async copyRow(id) {
+        const row = this._row(id);
+        if (!row) return;
+        try {
+            await navigator.clipboard.writeText(row.dataset.text || '');
+            this.copied = true;
+            clearTimeout(this._copyTimer);
+            this._copyTimer = setTimeout(() => (this.copied = false), 1600);
+        } catch {
+            /* clipboard indisponible */
+        }
+        this.menuId = null;
+    },
+
+    deleteMsg(id) {
+        this.menuId = null;
+        if (window.confirm(chatMeta.delete_confirm)) {
+            this.$wire.deleteMessage(id);
+        }
+    },
+
+    forwardMsg(id) {
+        this.menuId = null;
+        this.$wire.forwardMessage(id);
+        this.scrollToBottom();
+    },
+
+    reactFromMenu(id, emoji) {
+        this.menuId = null;
+        this.$wire.react(id, emoji);
+    },
+
+    toggleSearch() {
+        this.searchOpen = !this.searchOpen;
+        if (this.searchOpen) {
+            this.$nextTick(() => { const i = this.$refs.searchInput; if (i) i.focus(); });
+        } else {
+            this.searchQ = '';
+            this.applySearch();
+        }
+    },
+
+    applySearch() {
+        const q = this.searchQ.trim().toLowerCase();
+        const rows = this.$root.querySelectorAll('.msg-row');
+        let shown = 0;
+        rows.forEach((r) => {
+            const text = (r.dataset.text || '').toLowerCase();
+            const visible = q ? text.includes(q) : true;
+            r.style.display = visible ? '' : 'none';
+            if (visible) shown++;
+        });
+        this.searchEmpty = q !== '' && shown === 0;
+        this._highlight(q);
+    },
+
+    _highlight(q) {
+        const root = this.$refs.scroll;
+        if (!root) return;
+        root.querySelectorAll('mark.chat-search-hit').forEach((m) => {
+            const t = document.createTextNode(m.textContent);
+            m.replaceWith(t);
+        });
+        if (!q) return;
+        const re = new RegExp(`(${escRe(q)})`, 'gi');
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+            acceptNode: (node) => {
+                const p = node.parentElement;
+                return p && (p.closest('.chat-meta') || p.tagName === 'MARK' || p.closest('video'))
+                    ? NodeFilter.FILTER_REJECT
+                    : NodeFilter.FILTER_ACCEPT;
+            },
+        });
+        const targets = [];
+        while (walker.nextNode()) targets.push(walker.currentNode);
+        targets.forEach((node) => {
+            const parent = node.parentElement;
+            if (!parent) return;
+            const frag = document.createDocumentFragment();
+            let last = 0;
+            let m;
+            const text = node.nodeValue;
+            while ((m = re.exec(text))) {
+                if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+                const mark = document.createElement('mark');
+                mark.className = 'chat-search-hit';
+                mark.textContent = m[1];
+                frag.appendChild(mark);
+                last = m.index + m[1].length;
+            }
+            if (!last) return;
+            if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+            parent.replaceChild(frag, node);
+        });
+    },
+
     liveDot() {
         return Math.floor(Date.now() / 500) % 2 === 0 ? 'dot-on' : '';
+    },
+
+    nearBottom() {
+        const el = this.$refs.scroll;
+        if (!el) return true;
+        return el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+    },
+
+    watchScroll() {
+        const el = this.$refs.scroll;
+        if (!el) return;
+        const onScroll = () => {
+            this.scrolledUp = !this.nearBottom();
+            if (!this.scrolledUp) this.unread = 0;
+        };
+        el.addEventListener('scroll', onScroll, { passive: true });
+
+        const obs = new MutationObserver(() => {
+            const prev = this._lastCount ?? 0;
+            const rows = el.querySelectorAll('.msg-row');
+            const count = rows.length;
+            const bottom = this.nearBottom();
+            if (count > prev) {
+                const incoming = [...rows].slice(prev).filter((r) => r.dataset.uid !== chatMeta.sender_id);
+                if (incoming.length) {
+                    if (!bottom || document.hidden) this.unread += incoming.length;
+                    if (this.soundOn) this.beep();
+                    if (this.unread > 0) document.title = `(${this.unread}) ${this.lastTitle}`;
+                }
+            }
+            this._lastCount = count;
+            if (bottom) el.scrollTop = el.scrollHeight;
+            if (this.searchOpen) this.applySearch();
+        });
+        obs.observe(el, { childList: true, subtree: true });
+
+        this._lastCount = el.querySelectorAll('.msg-row').length;
+        el.scrollTop = el.scrollHeight;
+        onScroll();
+    },
+
+    scrollToBottom() {
+        const el = this.$refs.scroll;
+        if (!el) return;
+        el.scrollTop = el.scrollHeight;
+        this.unread = 0;
+        this.scrolledUp = false;
+        this.resetNotif();
+    },
+
+    async copyMessage(event) {
+        if (event.target.closest('a, button, .chat-meta, .stk-inline, .chat-reply-quote, .msg-menu-btn')) return;
+        const bubble = event.target.closest('.chat-bubble');
+        if (!bubble) return;
+        const row = bubble.closest('.msg-row');
+        const text = bubble.dataset.text || (row ? row.dataset.text : '');
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+            this.copied = true;
+            clearTimeout(this._copyTimer);
+            this._copyTimer = setTimeout(() => (this.copied = false), 1600);
+        } catch {
+            /* clipboard indisponible */
+        }
+    },
+
+    async loadKlipy(kind) {
+        if (!this.klipyOn || this[kind + 'Loaded']) return;
+        this[kind + 'Loading'] = true;
+        this[kind + 'Failed'] = false;
+        try {
+            const res = await this.$wire.trendingMedia(kind === 'klipyGifs' ? 'gif' : 'sticker');
+            if (Array.isArray(res)) this[kind] = res;
+        } catch {
+            this[kind + 'Failed'] = true;
+        }
+        this[kind + 'Loading'] = false;
+    },
+
+    async searchKlipy(kind) {
+        if (!this.klipyOn) return;
+        const q = (kind === 'klipyGifs' ? this.gifQuery : this.stickerQuery).trim();
+        if (!q) return;
+        this[kind + 'Loading'] = true;
+        try {
+            const res = await this.$wire.searchMedia(q, kind === 'klipyGifs' ? 'gif' : 'sticker');
+            if (Array.isArray(res)) this[kind] = res;
+        } catch {
+            /* noop */
+        }
+        this[kind + 'Loading'] = false;
+    },
+
+    sendMedia(item, type) {
+        if (!item || !item.url) return;
+        this.$wire.sendMedia(item.url, item.preview || '', type, item.alt || '');
+        this.picker = false;
+    },
+
+    playGif(e) {
+        const img = e.currentTarget;
+        if (!img || !img.dataset.gif) return;
+        img.src = img.dataset.gif;
     },
 });
 
@@ -504,3 +1019,7 @@ window.hidePreloader = () => {
 
 window.addEventListener('load', () => setTimeout(window.hidePreloader, 350));
 setTimeout(window.hidePreloader, 6000);
+
+if (window.Alpine && !window.Alpine.__fromLivewire) {
+    window.Alpine.start();
+}

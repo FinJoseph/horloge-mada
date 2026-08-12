@@ -22,6 +22,7 @@ new class extends Component
     x-init="init()"
     class="relative min-h-screen overflow-hidden bg-[#0b1026]"
     :data-theme="sky()"
+    :data-app-theme="appThemeId"
 >
     <div hidden id="shift-config">{{ json_encode(config('shift')) }}</div>
     <div hidden id="i18n-config">{!! $this->i18nJson() !!}</div>
@@ -60,10 +61,10 @@ new class extends Component
                 <div class="glass flex h-11 w-11 items-center justify-center rounded-2xl">
                     <x-icon name="clock" class="h-6 w-6 text-cyan-300" />
                 </div>
-                <div>
-                    <h1 class="text-lg font-bold tracking-tight">Horloge Mada</h1>
-                    <p class="text-xs text-white/60" x-text="city + ' · ' + weekday() + ' ' + date()"></p>
-                </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight">Horloge Mada</h1>
+                        <p class="max-w-[180px] truncate text-xs text-white/60 sm:max-w-none" x-text="city + ' · ' + weekday() + ' ' + date()"></p>
+                    </div>
             </div>
 
             <div class="flex items-center gap-3">
@@ -75,7 +76,7 @@ new class extends Component
                         :title="'🌐 ' + current"
                     >
                         <x-icon name="globe" class="h-5 w-5" />
-                        <span class="font-bold uppercase tracking-wider" x-text="current"></span>
+                        <span class="hidden font-bold uppercase tracking-wider sm:inline" x-text="current"></span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </button>
                     <div
@@ -94,6 +95,35 @@ new class extends Component
                                 <span class="text-base" x-text="lang.flag"></span>
                                 <span x-text="lang.name"></span>
                                 <span class="ml-auto text-xs text-white/40 uppercase" x-text="lang.code"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+                <div x-data="themePicker()" class="relative">
+                    <button
+                        type="button"
+                        @click="open = !open"
+                        class="glass flex h-11 w-11 items-center justify-center rounded-2xl transition hover:scale-105 active:scale-95"
+                        :title="'🎨 ' + (themes.find(t => t.id === current)?.name || current)"
+                    >
+                        <x-icon name="palette" class="h-5 w-5" />
+                    </button>
+                    <div
+                        x-show="open"
+                        @click.away="open = false"
+                        x-transition
+                        class="dropdown-panel absolute right-0 z-40 mt-2 w-56 overflow-hidden rounded-2xl p-1.5"
+                    >
+                        <template x-for="t in themes" :key="t.id">
+                            <button
+                                type="button"
+                                @click="setTheme(t.id)"
+                                class="flex w-full items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm transition hover:bg-white/10"
+                                :class="t.id === current ? 'bg-white/10 font-bold' : ''"
+                            >
+                                <span class="text-base" x-text="t.emoji"></span>
+                                <span x-text="t.name"></span>
+                                <span class="ml-auto text-xs text-white/40" x-show="t.id === current">✓</span>
                             </button>
                         </template>
                     </div>
@@ -125,16 +155,16 @@ new class extends Component
                     <div class="holo-scan pointer-events-none absolute inset-x-0 h-40 opacity-40"></div>
 
                     <div class="flex flex-1 flex-col items-center gap-6">
-                        <div class="digital text-7xl font-bold tabular-nums tracking-tight sm:text-8xl" x-text="time()"></div>
+                        <div class="digital text-6xl font-bold tabular-nums tracking-tight sm:text-7xl lg:text-8xl" x-text="time()"></div>
 
                         <div class="flex flex-wrap items-center justify-center gap-3 text-white/70">
                             <span class="date-pill glass flex items-center gap-2 rounded-full px-4 py-2 text-sm">
                                 <x-icon name="calendar" class="h-4 w-4" />
-                                <span x-text="weekday() + ' ' + date()"></span>
+                                <span class="truncate" x-text="weekday() + ' ' + date()"></span>
                             </span>
                             <span class="payday-pill glass flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold">
                                 <x-icon name="banknote" class="h-4 w-4" />
-                                <span x-text="paydayLabel()"></span>
+                                <span class="truncate" x-text="paydayLabel()"></span>
                             </span>
                         </div>
 
@@ -170,10 +200,10 @@ new class extends Component
                                 <div class="text-xs uppercase tracking-widest text-white/50">{{ __('clock_countdown') }}</div>
                                 <div class="mt-1 text-lg font-bold tabular-nums" x-text="countdownLabel()"></div>
                             </div>
-                            <div class="stat rounded-2xl bg-white/5 p-4 text-center ring-1 ring-white/10">
-                                <div class="text-xs uppercase tracking-widest text-white/50">{{ __('clock_message') }}</div>
-                                <div class="mt-1 text-sm font-semibold" x-text="message()"></div>
-                            </div>
+                        <div class="stat rounded-2xl bg-white/5 p-4 text-center ring-1 ring-white/10">
+                            <div class="text-xs uppercase tracking-widest text-white/50">{{ __('clock_message') }}</div>
+                            <div class="mt-1 break-words text-sm font-semibold" x-text="message()"></div>
+                        </div>
                         </div>
                     </div>
                 </div>

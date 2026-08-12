@@ -8,23 +8,35 @@ Créé avec ❤️ par **Fin Joseph** — [Portfolio](https://finjoseph.onrender
 
 ![Horloge Mada](public/images/screenshots/horloge-mada.png)
 
+### Galerie
+
+| Horloge | Chat en direct |
+|---|---|
+| ![Horloge](public/images/screenshots/horlog.png) | ![Chat](public/images/screenshots/chat.png) |
+
+| Sélecteur de langue | Sélecteur de thème |
+|---|---|
+| ![Langues](public/images/screenshots/lange.png) | ![Thèmes](public/images/screenshots/theme.png) |
+
 ## ✨ Fonctionnalités
 
 - 🕒 Heure officielle de Madagascar en temps réel
 - 📅 Date et jour de la semaine en 5 langues : 🇫🇷 🇲🇬 🇬🇧 🇮🇳 🇨🇳
+- 🎨 12 thèmes visuels (Classic, Foot, Fleur, Amour, Tech, Cool, Reggae, Geek, Animaux, Océan, Noël, Nuit), chacun avec sa mascotte
 - ⏱️ Progression de la journée de travail (07:00 → 19:00)
 - 🍽️ Pause déjeuner à 12:00 (1h)
 - ⏳ Compte à rebours vers la prochaine étape
 - 💰 Compte à rebours de la paie (15 du mois)
 - 🌅 Ciel dynamique : aube, jour, crépuscule, nuit — soleil et lune réalistes en 3D
 - 🐱 Chat mascotte qui se promène aléatoirement sur toute la page
-- 💬 Chat en direct multi-utilisateurs avec emojis, stickers et GIFs animés (Google Noto, sans clé API)
+- 💬 Chat en direct multi-utilisateurs : emojis, stickers et GIFs animés (Google Noto, sans clé API), **sondages**, réactions, réponses, édition, suppression, recherche, annonces, présence en ligne et indicateur de frappe
+- 📡 API émojis : `GET /api/emojis` — 3953 émojis (recherche, catégories, teints de peau, pagination, hex pour les images Noto)
 - 🔔 Alarmes sonores (début, pause, reprise, fin de journée)
 - 🎨 Effets 3D : tilt au survol des cartes, reflets, écran de chargement
 
 ## 🛠️ Stack
 
-- **Laravel 12** + **Livewire 4** (composants SFC)
+- **Laravel 13** + **Livewire 4** (composants SFC)
 - **Alpine.js** pour l'interactivité côté client
 - **Tailwind CSS v4** + CSS custom (Vite)
 - **FrankenPHP** (PHP 8.4) en Docker

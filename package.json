@@ -14,7 +14,15 @@
         "vite": "^8.0.0"
     },
     "dependencies": {
-        "alpinejs": "^3.16.0",
+        "@alpinejs/anchor": "^3.16.1",
+        "@alpinejs/collapse": "^3.16.1",
+        "@alpinejs/focus": "^3.16.1",
+        "@alpinejs/intersect": "^3.16.1",
+        "@alpinejs/morph": "^3.16.1",
+        "@alpinejs/persist": "^3.16.1",
+        "alpinejs": "^3.16.1",
+        "emoji-picker-element": "^1.29.1",
+        "emoji-picker-element-data": "^1.8.0",
         "lucide-static": "^1.31.0"
     }
 }
